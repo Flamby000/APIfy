@@ -1,12 +1,25 @@
 // Send request to the API with async fetch
 
-function request(module, library, action, data) {
-    // Fetch on `http://localhost:3000
-    return fetch(`http://localhost:3002/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+async function request(module, library, action, params = false)
+{
+    //console.log("Requesting API: " + module + "/" + library + "/" + action);
+
+    if(params != false) params = JSON.stringify(params);
+    // console.log(params);
+
+    let result = await $.ajax("http://localhost:8080", 
+    {
+        type: 'POST',
+        data : {
+            module : module,
+            library : library,
+            action : action,
+            params : params
+        }
     });
+
+    // console.log(result);
+
+    try { result = JSON.parse(result); } catch (e) {}
+	return result;
 }

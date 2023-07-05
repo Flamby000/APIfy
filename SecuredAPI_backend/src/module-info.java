@@ -6,4 +6,5 @@
  *
  */
 module SecuredAPI {
+	requires jdk.httpserver;
 }
