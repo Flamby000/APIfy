@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup</title>
+    <!-- <link rel="stylesheet" href="css/style.css"> -->
+    <script src="js/api.js"></script>
+</head>
+<body>
+
+    <script>
+    window.onload = async function() {
+
+        let response = await request("Core", "Setup", "setup_db", 
+        {
+            "db_hostname" : "localhost",
+            "db_username" : "root",
+            "db_password" : "",
+            "db_name" : "test"
+        });
+        console.log(response);
+    }
+    </script>
+</body>
+</html>

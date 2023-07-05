@@ -1,0 +1,9 @@
+/**
+ * 
+ */
+/**
+ * @author maxou
+ *
+ */
+module SecuredAPI {
+}
