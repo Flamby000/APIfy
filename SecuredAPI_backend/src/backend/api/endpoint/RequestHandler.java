@@ -33,9 +33,9 @@ public class RequestHandler implements HttpHandler {
                 br.close();
                 isr.close();
 
-                String payload = payloadBuilder.toString();
-                System.out.println("Received JSON payload: " + payload);
-                // Received JSON payload: module=Core&library=Setup&action=setup_db&params=%7B%22db_hostname%22%3A%22localhost%22%2C%22db_username%22%3A%22root%22%2C%22db_password%22%3A%22%22%2C%22db_name%22%3A%22test%22%7D
+                String payload = java.net.URLDecoder.decode(payloadBuilder.toString(), "UTF-8");
+                System.out.println("Decoded JSON payload: " + payload);
+                
 
                 // Send the response
                 String response = "200 OK";
