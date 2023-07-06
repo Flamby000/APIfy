@@ -6,20 +6,24 @@ import java.io.InputStreamReader;
 import java.util.Objects;
 import com.sun.net.httpserver.HttpExchange;
 
+import backend.api.interfaces.Application;
+
 
 public class RequestData {
 	
-    private static final String INVALID = "none";
+    public static final String INVALID = "none";
 	
 	String params;
 	private final String action;
 	private final String library;
 	private final String module;
+	@SuppressWarnings("unused")
 	private final String id;
 	String token;
 	
+
 	
-	public RequestData(HttpExchange exchange) throws IOException {
+	public RequestData(HttpExchange exchange, Application app, ResponseData response) throws IOException {
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
 		
 		// Get parameters
@@ -30,30 +34,63 @@ public class RequestData {
 		br.close();
 		isr.close();
 		params = java.net.URLDecoder.decode(payloadBuilder.toString(), "UTF-8");
-		System.out.println(params);
 		
 		// Get module/library/action/id values
 		var path = exchange.getRequestURI().getPath();
 		var pathParts = path.split("/");
-		if(pathParts.length < 3) throw new IllegalStateException("The URL must be like /api/module/library/action");
-		
-		module = pathParts[2];
-		Objects.requireNonNull(module, "Module cannot null");
-		if(module.isEmpty()) throw new IllegalStateException("Module cannot be empty");
 
-		library = pathParts[3];
-		Objects.requireNonNull(library, "Library cannot null");
-		if(library.isEmpty()) throw new IllegalStateException("Library cannot be empty");
+		if(pathParts.length < 6) throw new IllegalStateException("The URL must be like /api/token/module/library/action");
+
+		if(!app.name().equals(pathParts[1])) {
+			response.appendError("application_not_found", "The application " + pathParts[1] + " doesn't exists");
+		}
 		
-		action = pathParts[4];
-		Objects.requireNonNull(action, "Action cannot null");
-		if(action.isEmpty()) throw new IllegalStateException("Action cannot be empty");
+		module = pathParts[3];
+		if(module == null || module.isEmpty()) {
+			response.appendError("invalid_module", "The module is not specified");
+		}
 		
-		id = pathParts.length == 4 ? pathParts[5] : INVALID;
+		library = pathParts[4];
+		if(library == null || library.isEmpty()) {
+			response.appendError("invalid_library", "The library is not specified");
+		}
+		
+		action = pathParts[5];
+		if(action == null || action.isEmpty()) {
+			response.appendError("invalid_action", "The action is not specified");
+		}
+		
+		id = pathParts.length == 7 ? pathParts[6] : INVALID;
+		
+		if(!response.success()) {
+			response.send(400); // Bad request
+			return;
+		}
+		
+		token = pathParts[2];
+		if(token == null || token.isEmpty()) {
+			response.appendError("invalid_token", "The authentication token is not valid");
+			response.send(401); // Unauthorized
+		}
+
+		
+		System.out.println("----New Request---- ");
+		System.out.println("app     : " + pathParts[1] + "(" + !app.name().equals(pathParts[1]) + ")");
+		System.out.println("token   : " + token);
+		System.out.println("module  : " + module + "-"+app.getModule(module));
+		System.out.println("library :" + library);
+		System.out.println("action  : " + action);
+		System.out.println("params  : " + params);
+		System.out.println("id      : " + id);
+		
+		
+
 	}
 	
 	
-	
+	public static void requireId(String id) {
+		if(id == RequestData.INVALID) throw new IllegalArgumentException("The action need a valid ID");
+	}
 
 	
 }

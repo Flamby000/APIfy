@@ -1,11 +1,14 @@
 package backend.api.interfaces;
 
-import backend.api.endpoint.RequestData;
+import java.util.List;
+
 import backend.api.endpoint.ResponseData;
 
 public interface Action {
-	String name();
+	default String name() { return this.getClass().getName(); }
 	String description();
-	ResponseData execute(RequestData data);
-
+	default boolean isGuestAction() { return false; }
+	default String method() { return "POST"; }
+	List<Parameter> parameters();
+	ResponseData execute(String id);
 }

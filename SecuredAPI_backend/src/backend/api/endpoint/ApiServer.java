@@ -5,6 +5,8 @@ import java.net.InetSocketAddress;
 
 import com.sun.net.httpserver.HttpServer;
 
+import backend.api.interfaces.Application;
+
 public class ApiServer {
     public static final int PORT = 4080;
 
@@ -12,7 +14,7 @@ public class ApiServer {
     	
     	/* Start the HTTP server */
         var server = HttpServer.create(new InetSocketAddress(PORT), 0);
-        server.createContext("/api", new RequestHandler());
+        server.createContext("/api", new RequestHandler(new Application()));
         //server.createContext("/setup", new RequestHandler());
         server.setExecutor(null);
         server.start();

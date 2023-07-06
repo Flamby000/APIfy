@@ -7,7 +7,7 @@ async function request(module, library, action, params = false)
     if(params != false) params = JSON.stringify(params);
     // console.log(params);
 
-    let result = await $.ajax(`http://localhost:4080/api/${module}/${library}/${action}`, 
+    let result = await $.ajax(`http://localhost:4080/api/1234/${module}/${library}/${action}`, 
     {
         type: 'POST',
         data : params

@@ -4,10 +4,18 @@ import java.io.IOException;
 import java.util.Objects;
 
 import com.sun.net.httpserver.HttpHandler;
+
+import backend.api.interfaces.Application;
+
 import com.sun.net.httpserver.HttpExchange;
 
 
-public class RequestHandler implements HttpHandler {
+public record RequestHandler(Application app) implements HttpHandler {
+	
+	public RequestHandler {
+		Objects.requireNonNull(app);
+	}
+	
 	
 	/*
 	 * Handle the client requests
@@ -15,30 +23,27 @@ public class RequestHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
     	Objects.requireNonNull(exchange, "Exchange cannot be null");
-    	
+
         // Set CORS headers
     	allowCORS(exchange);
     	
-        if ("POST".equals(exchange.getRequestMethod())) {
-        	
-            // Read the request payload as JSON
-			var requestData = new RequestData(exchange);
-            
+    	var response = new ResponseData(exchange);
+		var requestData = new RequestData(exchange, app, response);
+		if(response.isClosed()) return;
+		
+
+    	
+        //if ("POST".equals(exchange.getRequestMethod())) {
+			
+          
             // Send the response
-            var response = "200 OK";
-            
-            exchange.sendResponseHeaders(200, response.getBytes().length);
-            exchange.getResponseBody().write(response.getBytes());
-            exchange.close();
+        response.send(200); // 200 OK
             
             
-        } else {
+        //} else {
             // Handle non-POST requests with a 405 Method Not Allowed response
-            var response = "Method Not Allowed";
-            exchange.sendResponseHeaders(405, response.getBytes().length);
-            exchange.getResponseBody().write(response.getBytes());
-            exchange.close();
-        }
+            //response.send(405); // 405 Method not allowed;
+        //}
     }
     
     

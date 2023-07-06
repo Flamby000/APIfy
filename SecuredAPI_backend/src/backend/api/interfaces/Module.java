@@ -1,12 +1,13 @@
 package backend.api.interfaces;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public interface Module {
-	String name();
-	String description();
+	default String name() { return this.getClass().getName(); }
+	String desciption();
 	String version();
 	String author();
 	String url();
-	ArrayList<Library> libraries();
+    List<Library> libraries();
+		
 }

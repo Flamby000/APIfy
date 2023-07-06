@@ -1,14 +1,14 @@
 package backend.api.interfaces;
 
-import java.util.ArrayList;
+import java.util.List;
 
 
 public interface Library {
-	String name();
-	String description();
+	default String name() { return this.getClass().getName(); }
+	String desciption();
 	String version();
 	String author();
 	String url();
-	ArrayList<Action> actions();
+	List<Action> actions();
 	
 }
