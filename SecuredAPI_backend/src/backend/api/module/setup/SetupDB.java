@@ -1,8 +1,10 @@
 package backend.api.module.setup;
+import java.io.IOException;
 import java.util.List;
 
 import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
+import backend.api.interfaces.Application;
 import backend.api.interfaces.Parameter;
 
 
@@ -14,12 +16,12 @@ public record SetupDB() implements Action {
 	}
 	
 	@Override
-	public List<Parameter> parameters() {
+	public List<Parameter<?>> parameters() {
 		return List.of(
-			new Parameter("db_hostname", "String", "The host name/url of the database", null, true),
-			new Parameter("db_name", "String", "The name of the database to connect to", null, true),
-			new Parameter("db_username", "String", "The user using the database with admin rights", null, true),
-			new Parameter("db_password", "String", "The password of the user", null, true)
+			new Parameter<String>("db_hostname", "The host name/url of the database", null, true),
+			new Parameter<String>("db_name", "The name of the database to connect to", null, true),
+			new Parameter<String>("db_username", "The user using the database with admin rights", null, true),
+			new Parameter<String>("db_password", "The password of the user", null, true)
 		);
 	}
 	
@@ -28,9 +30,10 @@ public record SetupDB() implements Action {
 
 	
 	@Override
-	public ResponseData execute(String id) {
-		// TODO Auto-generated method stub
-		return null;
+	public void execute(ResponseData response, Application app, String id) throws IOException {
+		//response.appendResult(new Parameter<String>("message", "Request success !"));
+		//response.appendResult(new Parameter<Integer>("valor", 1));
+		response.send(200);
 	}
 
 

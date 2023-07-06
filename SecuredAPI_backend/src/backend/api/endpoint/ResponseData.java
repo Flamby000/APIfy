@@ -17,7 +17,7 @@ public class ResponseData {
 	private boolean over;
 	
 	private final Map<String, String> errors = new HashMap<>();
-	private final List<Parameter> result = new ArrayList<>();
+	private final List<Parameter<?>> result = new ArrayList<>();
 	
 	public ResponseData(HttpExchange exchange) {
 		Objects.requireNonNull(exchange);
@@ -29,7 +29,7 @@ public class ResponseData {
 		errors.put(error, description);
 	}
 	
-	public void appendResult(Parameter parameter) {
+	public void appendResult(Parameter<?> parameter) {
 		result.add(parameter);
 	}
 	
@@ -40,6 +40,7 @@ public class ResponseData {
 	
 	public void send(int code) throws IOException {
 		
+		// Build JSON response 
 		var sb = new StringBuilder();
 		sb.append("{")
 		  .append("\"success\":")
@@ -52,23 +53,21 @@ public class ResponseData {
 		    .collect(Collectors.joining(",")))
 		  .append("]")
 		  .append(",")
-		  .append("\"data\":");
+		  .append("\"result\":");
 
 		if(result.size() == 0) sb.append("false");
 		else {
 		sb.append("{")
 		  .append(result.stream()
-		    .map(parameter -> String.format("\"%s\":\"%s\"", parameter.name(), parameter.value()))
+		    .map(parameter -> String.format("\"%s\":\"%s\"", parameter.name(), parameter.stringifyValue()))
 		    .collect(Collectors.joining(",")))
 		  .append("}");
 		}
 		sb.append("}");
 		  
 
-
 		
-		
-		
+		// Send response to client
 		var response = sb.toString();
         exchange.sendResponseHeaders(code, response.getBytes().length);
         exchange.getResponseBody().write(response.getBytes());

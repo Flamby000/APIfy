@@ -20,6 +20,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 	 */
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
+		
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
 
 		// Set CORS headers
@@ -29,12 +30,12 @@ public record RequestHandler(Application app) implements HttpHandler {
 		var request = new RequestData(exchange, app, response); // check the syntax and extract the data 
 		if (response.isClosed()) return; // If the syntax is incorrect
 		
-		// unhandled errors with code 500 with try/catch
+		
+		// handled errors with code 500 with try/catch
 		
 		
 		// Check if module/library/action are on the database (error 400)
 		// TODO
-		
 		
 		
 		// Check if module/library/action are implemented (Error 501)
@@ -66,10 +67,31 @@ public record RequestHandler(Application app) implements HttpHandler {
 			return;
 		}
 
+		
+		// Check action parameters on instance
 
-		response.send(200); // 200 OK
-		return;
+		
+		
+		if(!action.isGuestAction()) {
+		// Check permissions (rights on DB)
+		// TODO
+			
+		}
+		
 
+		// Execute the action 
+		try {
+			action.execute(response, app, request.id());
+		} catch(Exception e) {
+			response.appendError("unhandled_error", "The method \"" + exchange.getRequestMethod() + "\" raise an error : " + e.getMessage());
+			response.send(500);
+		}
+		
+		if (response.isClosed()) return; // If the action succeed
+
+
+		response.appendError("execution_failed", "The action \"" + request.actionName() + "\" failed its execution");
+		response.send(501); // Implementation error
 	}
 
 	/**
