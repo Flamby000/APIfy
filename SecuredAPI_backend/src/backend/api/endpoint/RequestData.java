@@ -21,10 +21,13 @@ public class RequestData {
 	private final String id;
 	String token;
 	
-
+	
 	
 	public RequestData(HttpExchange exchange, Application app, ResponseData response) throws IOException {
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
+		Objects.requireNonNull(response, "Response cannot be null");
+		Objects.requireNonNull(app, "Application cannot be null");
+		
 		
 		// Get parameters
 		var isr = new InputStreamReader(exchange.getRequestBody(), "UTF-8");
@@ -40,7 +43,6 @@ public class RequestData {
 		var pathParts = path.split("/");
 
 		if(pathParts.length < 6) throw new IllegalStateException("The URL must be like /api/token/module/library/action");
-
 		if(!app.name().equals(pathParts[1])) {
 			response.appendError("application_not_found", "The application " + pathParts[1] + " doesn't exists");
 		}
@@ -72,20 +74,14 @@ public class RequestData {
 			response.appendError("invalid_token", "The authentication token is not valid");
 			response.send(401); // Unauthorized
 		}
-
-		
-		System.out.println("----New Request---- ");
-		System.out.println("app     : " + pathParts[1] + "(" + !app.name().equals(pathParts[1]) + ")");
-		System.out.println("token   : " + token);
-		System.out.println("module  : " + module + "-"+app.getModule(module));
-		System.out.println("library :" + library);
-		System.out.println("action  : " + action);
-		System.out.println("params  : " + params);
-		System.out.println("id      : " + id);
-		
-		
-
 	}
+
+	
+	
+	public String moduleName() { return module;}
+	public String libraryName() { return library;}
+	public String actionName() { return action;}
+	
 	
 	
 	public static void requireId(String id) {

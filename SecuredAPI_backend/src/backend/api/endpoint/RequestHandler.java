@@ -9,54 +9,79 @@ import backend.api.interfaces.Application;
 
 import com.sun.net.httpserver.HttpExchange;
 
-
 public record RequestHandler(Application app) implements HttpHandler {
-	
+
 	public RequestHandler {
 		Objects.requireNonNull(app);
 	}
-	
-	
+
 	/*
 	 * Handle the client requests
 	 */
-    @Override
-    public void handle(HttpExchange exchange) throws IOException {
-    	Objects.requireNonNull(exchange, "Exchange cannot be null");
+	@Override
+	public void handle(HttpExchange exchange) throws IOException {
+		Objects.requireNonNull(exchange, "Exchange cannot be null");
 
-        // Set CORS headers
-    	allowCORS(exchange);
-    	
-    	var response = new ResponseData(exchange);
-		var requestData = new RequestData(exchange, app, response);
-		if(response.isClosed()) return;
+		// Set CORS headers
+		allowCORS(exchange);
+
+		var response = new ResponseData(exchange);
+		var request = new RequestData(exchange, app, response); // check the syntax and extract the data 
+		if (response.isClosed()) return; // If the syntax is incorrect
 		
+		// unhandled errors with code 500 with try/catch
+		
+		
+		// Check if module/library/action are on the database (error 400)
+		// TODO
+		
+		
+		
+		// Check if module/library/action are implemented (Error 501)
+		var module = app.getModule(request.moduleName());
+		if(module == null) {
+			response.appendError("module_not_implemented", "The module \"" + request.moduleName() + "\" is not implemented");
+			response.send(501);
+			return;
+		}
 
-    	
-        //if ("POST".equals(exchange.getRequestMethod())) {
-			
-          
-            // Send the response
-        response.send(200); // 200 OK
-            
-            
-        //} else {
-            // Handle non-POST requests with a 405 Method Not Allowed response
-            //response.send(405); // 405 Method not allowed;
-        //}
-    }
-    
-    
-    
+		var library = module.getLibrary(request.libraryName());
+		if(library == null) {
+			response.appendError("library_not_implemented", "The library \"" + request.libraryName() + "\" is not implemented");
+			response.send(501);
+			return;
+		}
+		
+		var action = library.getAction(request.actionName());
+		if(action == null) {
+			response.appendError("library_not_implemented", "The action \"" + request.actionName() + "\" is not implemented");
+			response.send(501);
+			return;
+		}
+		
+		// Check the validity of the method
+		if(!exchange.getRequestMethod().equals(action.method())) {
+			response.appendError("method_not_allowed", "The method \"" + exchange.getRequestMethod() + "\" is not allowed for the action " + action.name() + ". Try the method " + action.method());
+			response.send(405);
+			return;
+		}
+
+
+		response.send(200); // 200 OK
+		return;
+
+	}
+
 	/**
 	 * Avoid the CORS on client request
+	 * 
 	 * @param exchange to allow CORS
 	 */
 	public static void allowCORS(HttpExchange exchange) {
-        var headers = exchange.getResponseHeaders();
-        headers.add("Access-Control-Allow-Origin", "*"); // Allow requests from any origin
-        headers.add("Access-Control-Allow-Methods", "POST"); // Allow only POST requests
-        headers.add("Access-Control-Allow-Headers", "Content-Type"); // Allow Content-Type header
+		var headers = exchange.getResponseHeaders();
+		headers.add("Access-Control-Allow-Origin", "*"); // Allow requests from any origin
+		headers.add("Access-Control-Allow-Methods", "POST"); // Allow only POST requests
+		headers.add("Access-Control-Allow-Headers", "Content-Type"); // Allow Content-Type header
 	}
-	
+
 }

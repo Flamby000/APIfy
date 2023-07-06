@@ -19,17 +19,9 @@ public class Application {
 	
 	
 	public Module getModule(String name) {
-		for (Module module : modules) {
-			System.out.println(module.name() + " " + name);
-			if (module.name().equals(name)) {
-				return module;
-			}
-		}
-		return null;
-		/*return modules.stream()
+		return modules.stream()
 			.filter(module -> module.name().equals(name))
 			.findFirst()
 			.orElse(null);
-			*/
 	}
 }
