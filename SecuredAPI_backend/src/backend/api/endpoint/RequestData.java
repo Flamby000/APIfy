@@ -3,10 +3,12 @@ package backend.api.endpoint;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Objects;
 import com.sun.net.httpserver.HttpExchange;
 
 import backend.api.interfaces.Application;
+import backend.api.interfaces.Parameter;
 
 
 public class RequestData {
@@ -98,10 +100,64 @@ public class RequestData {
 	public String id() { return id;}
 	public String token() { return token;}
 	
+	public List<Parameter<?>> getParameters(List<Parameter<?>> expectedParameters, ResponseData response) throws IOException {
+
+		var json = params();
+		System.out.println(json);
+		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
+
+		// Check if the JSON is valid
+		if(json == null || json.isEmpty()) {
+			response.appendError("parameters_expected", "The action need parameters");
+			response.send(400);
+			return null;
+		}
+		
+		// Iterate all expected
+		for(Parameter<?> parameter : expectedParameters) {
+			var name = parameter.name();
+			var nameJson = Application.extractKeyFromJson(json, name);
+			
+			System.out.println("nameJson: " + nameJson);
+			System.out.println("name: " + name);
+			
+			if(nameJson == null) {
+				response.appendError("parameter_missing", "The parameter \"" + parameter.name() + "\" is missing");
+				response.send(400);
+				return null;
+			}
+
+			
+			
+			var type = parameter.type();
+			var typeJson = Application.getJsonTypeFromValue(nameJson);
+
+			System.out.println("typeJson: " + typeJson );
+			System.out.println("type: " + type);
+			
+			if(typeJson == null) {
+				response.appendError("parameter_invalid", "The parameter \"" + parameter.name() + "\" is not from the type " + parameter.type());
+				response.send(400);
+				return null;
+			}
+
+
+			
+		}
+		
+		
+		return null;
+	}
 	
-	
-	public static void requireId(String id) {
-		if(id == RequestData.INVALID) throw new IllegalArgumentException("The action need a valid ID");
+	public static boolean requireId(ResponseData response, String id){
+		if(id == RequestData.INVALID) {
+			response.appendError("id_missing", "The id of your request is missing");
+			try {
+				response.send(400);
+			} catch(Exception e) {}
+			return true;
+		}
+		return false;
 	}
 
 	

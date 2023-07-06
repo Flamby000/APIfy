@@ -42,9 +42,15 @@ public class Parameter<T> {
 	public String name() { return name; }
 	public String description() { return description; }
 	public boolean must() { return must; }
-	
+	public String type() { return value.getClass().getSimpleName(); }
+	public T value() { return value; }
 	
 	public String stringifyValue() {
 		return value.toString();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("Parameter [name=%s, value=%s, description=%s, must=%s]", name, value, description, must);
 	}
 }

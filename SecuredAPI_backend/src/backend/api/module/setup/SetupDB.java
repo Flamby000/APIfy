@@ -25,14 +25,21 @@ public record SetupDB() implements Action {
 		);
 	}
 	
+	
 	@Override
 	public boolean isGuestAction() { return true; }
 
 	
 	@Override
-	public void execute(ResponseData response, Application app, String id) throws IOException {
+	public void execute(Application app, ResponseData response, List<Parameter<?>> params, String id) throws IOException {
 		//response.appendResult(new Parameter<String>("message", "Request success !"));
 		//response.appendResult(new Parameter<Integer>("valor", 1));
+		
+		//if(RequestData.requireId(response, id)) return;
+		//var db = app.db();
+		//var param =  params
+		//System.out.println(param);
+
 		response.send(200);
 	}
 

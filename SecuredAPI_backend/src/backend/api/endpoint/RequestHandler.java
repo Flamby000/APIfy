@@ -69,8 +69,8 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		
 		// Check action parameters on instance
-
-		
+		var params = request.getParameters(action.parameters(), response);
+		if(params == null) return;
 		
 		if(!action.isGuestAction()) {
 		// Check permissions (rights on DB)
@@ -81,7 +81,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		// Execute the action 
 		try {
-			action.execute(response, app, request.id());
+			action.execute(app, response, params, request.id());
 		} catch(Exception e) {
 			response.appendError("unhandled_error", "The method \"" + exchange.getRequestMethod() + "\" raise an error : " + e.getMessage());
 			response.send(500);

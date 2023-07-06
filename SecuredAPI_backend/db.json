@@ -1,6 +1,6 @@
 {
-	"db_hostname":"",
-	"db_name":"",
-	"db_user":"",
-	"dn_password":""
+	"db_hostname":"localhost",
+	"db_name":"SecuredAPI",
+	"db_user":"SecuredAPI",
+	"db_password":"SecuredAPI"
 }
