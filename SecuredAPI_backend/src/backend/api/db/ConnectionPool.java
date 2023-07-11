@@ -5,13 +5,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map.Entry;
 
-import backend.api.interfaces.Application;
+import org.json.JSONObject;
+
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ConnectionPool {
 	
@@ -31,13 +33,19 @@ public class ConnectionPool {
             String line;
             while ((line = reader.readLine()) != null) jsonString.append(line);
             
-            var jsonContent = jsonString.toString();
-    	    dbUrl = "jdbc:mysql://"+Application.extractValueFromJson(jsonContent, "db_hostname")+"/"+Application.extractValueFromJson(jsonContent, "db_name");
-            dbUser = Application.extractValueFromJson(jsonContent, "db_user");
-            dbPass = Application.extractValueFromJson(jsonContent, "db_password");
+            var json = new JSONObject(jsonString.toString());
+
+            Objects.requireNonNull(json);
             
+    	    dbUrl = "jdbc:mysql://"+json.getString("db_hostname")+"/"+json.getString("db_name");
+            dbUser = json.getString("db_user");
+            dbPass = json.getString("db_password");
+
             
-		} catch(IOException e) {System.err.print(e);}
+		} catch(IOException e) {
+			System.err.print(e);
+			// END PROGRAM
+		}
 		
 		for(int i = 0; i < POOL_SIZE; i++) addConnection();
 	}

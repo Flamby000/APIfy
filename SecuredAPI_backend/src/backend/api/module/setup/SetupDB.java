@@ -18,10 +18,10 @@ public record SetupDB() implements Action {
 	@Override
 	public List<Parameter<?>> parameters() {
 		return List.of(
-			new Parameter<String>("db_hostname", "The host name/url of the database", null, true),
-			new Parameter<String>("db_name", "The name of the database to connect to", null, true),
-			new Parameter<String>("db_username", "The user using the database with admin rights", null, true),
-			new Parameter<String>("db_password", "The password of the user", null, true)
+			new Parameter<>(String.class, "db_hostname", "The host name/url of the database", null, true),
+			new Parameter<>(String.class, "db_name", "The name of the database to connect to", null, true),
+			new Parameter<>(String.class, "db_username", "The user using the database with admin rights", null, false),
+			new Parameter<>(String.class, "db_password", "The password of the user", null, true)
 		);
 	}
 	
