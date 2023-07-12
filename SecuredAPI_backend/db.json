@@ -2,5 +2,6 @@
 	"db_hostname":"localhost",
 	"db_name":"SecuredAPI",
 	"db_user":"SecuredAPI",
-	"db_password":"SecuredAPI"
+	"db_password":"SecuredAPI",
+	"table_prefix":"api_"
 }

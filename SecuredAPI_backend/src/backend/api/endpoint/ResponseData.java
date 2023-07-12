@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.json.JSONObject;
+
 import com.sun.net.httpserver.HttpExchange;
 
 import backend.api.interfaces.Parameter;
@@ -37,38 +39,51 @@ public class ResponseData {
 		return errors.size() == 0;
 	}
 	
+	public void addString(String name, String value) {
+		appendResult(new Parameter<>(String.class, name, value));
+	}
+	
+	public void addInt(String name, int value) {
+		appendResult(new Parameter<>(Integer.class, name, value));
+	}
+	
+	public void addBool(String name, boolean value) {
+		appendResult(new Parameter<>(Boolean.class, name, value));
+	}
+
+	public void addArray(String name, List<?> value) {
+		appendResult(new Parameter<>(List.class, name, value));
+	}
+
+	public void addMap(String name, Map<?, ?> value) {
+		appendResult(new Parameter<>(Map.class, name, value));
+	}
+	
+	
+	public void err(String error, String description) {
+		appendError(error, description);
+	}
 	
 	public void send(int code) throws IOException {
 		
-		// Build JSON response 
-		var sb = new StringBuilder();
-		sb.append("{")
-		  .append("\"success\":")
-		  .append(success())
-		  .append(",")
-		  .append("\"errors\":[")
-		  .append(errors.entrySet().stream()
-		    .map(error -> String.format("{\"error\":\"%s\",\"description\":\"%s\"}",
-		        error.getKey(), error.getValue()))
-		    .collect(Collectors.joining(",")))
-		  .append("]")
-		  .append(",")
-		  .append("\"result\":");
+		var res = new JSONObject();
+		res.put("success", success());
+		res.put("errors", errors.entrySet().stream()
+		    .map(error -> new JSONObject()
+		        .put("error", error.getKey())
+		        .put("description", error.getValue()))
+		    .collect(Collectors.toList()));
 
-		if(result.size() == 0) sb.append("false");
-		else {
-		sb.append("{")
-		  .append(result.stream()
-		    .map(parameter -> String.format("\"%s\":\"%s\"", parameter.name(), parameter.stringifyValue()))
-		    .collect(Collectors.joining(",")))
-		  .append("}");
-		}
-		sb.append("}");
-		  
-
+		res.put("result", result.stream()
+			.map(parameter -> new JSONObject()
+				.put("name", parameter.name())
+				.put("value", parameter.stringifyValue()))
+			.collect(Collectors.toList()));
+		
+		
 		
 		// Send response to client
-		var response = sb.toString();
+		var response = res.toString();
         exchange.sendResponseHeaders(code, response.getBytes().length);
         exchange.getResponseBody().write(response.getBytes());
         exchange.close();

@@ -1,5 +1,6 @@
 package backend.api.interfaces;
 
+import java.util.List;
 import java.util.Objects;
 
 
@@ -46,10 +47,16 @@ public class Parameter<T> {
 		this.description = description;
 	}
 	
+	static public Parameter<?> find(List<Parameter<?>> params, String name) {
+		return params.stream().filter((param) -> param.name().equals(name)).findFirst().orElse(null);
+	}
+	
+	
 	public String name() { return name; }
 	public String description() { return description; }
 	public boolean must() { return must; }
-	public String type() { return type.getSimpleName();}
+	@SuppressWarnings("rawtypes")
+	public Class type() { return type;}
 	public T value() { return value; }
 	
 	public String stringifyValue() {
@@ -60,4 +67,5 @@ public class Parameter<T> {
 	public String toString() {
 		return String.format("Parameter [name=%s, value=%s, description=%s, must=%s]", name, value, description, must);
 	}
+	
 }

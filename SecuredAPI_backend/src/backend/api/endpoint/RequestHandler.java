@@ -31,12 +31,25 @@ public record RequestHandler(Application app) implements HttpHandler {
 		if (response.isClosed()) return; // If the syntax is incorrect
 		
 		
+		
+		
 		// handled errors with code 500 with try/catch
 		
 		
-		// Check if module/library/action are on the database (error 400)
-		// TODO
-		
+
+		if(!request.actionName().equals("SetupDB")) {
+			
+			// Check if database is setup
+			if(!app.isDBSetup()) {
+				response.appendError("db_not_setup", "The database is not set up");
+				response.send(501);
+				return;
+			}
+				
+			// Check if module/library/action are on the database (error 400)
+			// TODO
+
+		}
 		
 		// Check if module/library/action are implemented (Error 501)
 		var module = app.getModule(request.moduleName());
@@ -72,23 +85,27 @@ public record RequestHandler(Application app) implements HttpHandler {
 		var params = request.getParameters(action.parameters(), response);
 		if(params == null) return;
 		
-		if(!action.isGuestAction()) {
-		// Check permissions (rights on DB)
-		// TODO
-			
+		
+		if(!request.actionName().equals("SetupDB")) {
+			if(!action.isGuestAction()) {
+			// Check permissions (rights on DB)
+			// TODO
+			}
 		}
 		
 
 		// Execute the action 
 		try {
-			action.execute(app, response, params, request.id());
+			var db = app.db();
+			action.execute(app, response, params, db, request.id());
+			app.close(db);
 		} catch(Exception e) {
-			response.appendError("unhandled_error", "The method \"" + exchange.getRequestMethod() + "\" raise an error : " + e.getMessage());
+			e.printStackTrace();
+			response.appendError("unhandled_error", "Your \"" + exchange.getRequestMethod() + "\" request raise an error : " + e);
 			response.send(500);
 		}
 		
 		if (response.isClosed()) return; // If the action succeed
-
 
 		response.appendError("execution_failed", "The action \"" + request.actionName() + "\" failed its execution");
 		response.send(501); // Implementation error

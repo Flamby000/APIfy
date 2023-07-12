@@ -19,6 +19,7 @@ public class ConnectionPool {
 	
 	private final static String DB_CONFIG = "db.json";
 	private final static int POOL_SIZE = 10;
+	private String prefix;
 	
 	private final List<Entry<Connection, Boolean>> connections = new ArrayList<>();
 	
@@ -40,11 +41,11 @@ public class ConnectionPool {
     	    dbUrl = "jdbc:mysql://"+json.getString("db_hostname")+"/"+json.getString("db_name");
             dbUser = json.getString("db_user");
             dbPass = json.getString("db_password");
+            prefix = json.getString("table_prefix");
 
             
 		} catch(IOException e) {
 			System.err.print(e);
-			// END PROGRAM
 		}
 		
 		for(int i = 0; i < POOL_SIZE; i++) addConnection();
@@ -57,11 +58,13 @@ public class ConnectionPool {
       
 	    } catch (Exception e) {System.err.print(e);}
 	}
+	public String prefix() { return prefix;}
 	
 	public Connection getFreeConnection() {
+		// return the first connection to TRUE and set it to FALSE
 		for(Entry<Connection, Boolean> entry : connections) {
 			if(entry.getValue()) {
-				entry.setValue(false);
+				connections.set(connections.indexOf(entry), Map.entry(entry.getKey(), false));
 				return entry.getKey();
 			}
 		}
@@ -71,7 +74,7 @@ public class ConnectionPool {
 	public void freeConnection(Connection connection) {
 		for(Entry<Connection, Boolean> entry : connections) {
 			if(entry.getKey().equals(connection)) {
-				entry.setValue(true);
+				connections.set(connections.indexOf(entry), Map.entry(entry.getKey(), true));
 				return;
 			}
 		}

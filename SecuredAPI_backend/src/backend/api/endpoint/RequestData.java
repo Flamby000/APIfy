@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
 import com.sun.net.httpserver.HttpExchange;
 import org.json.JSONObject;
 
@@ -102,8 +104,10 @@ public class RequestData {
 	public String id() { return id;}
 	public String token() { return token;}
 	
+	@SuppressWarnings("unchecked")
 	public List<Parameter<?>> getParameters(List<Parameter<?>> expectedParameters, ResponseData response) throws IOException {
-		
+		var result = new ArrayList<Parameter<?>>();
+
 		var json = params();
 		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
 
@@ -115,7 +119,6 @@ public class RequestData {
 		}
 		
 		var object = new JSONObject(json);
-		
 		
 		var mustCount = expectedParameters.stream().filter((parameter) -> parameter.must()).count();
 		var nonMustCount =  expectedParameters.stream().filter((parameter) -> !parameter.must()).count();
@@ -131,42 +134,55 @@ public class RequestData {
 		}
 
 		
-		
 		// Iterate all expected
-		expectedParameters.forEach((parameter) -> {
-			
-			try {
-				System.out.println("parameter needed = " + parameter.type());
-			} catch(Exception e) {
-				System.out.println(e);
-			}
+		for(var parameter : expectedParameters) {
 
-			
 			// Check parameter presence
 			if(!object.has(parameter.name()) && parameter.must()) {
-				response.appendError("parameter_missing", "The parameter \"" + parameter.name() + "\" is missing");
-				try { response.send(400); } catch (IOException e) {e.printStackTrace();}
-				return;
+				if(parameter.value() != null ) {
+					result.add(new Parameter<>(parameter.type(), parameter.name(), parameter.value()));
+				} else {
+					response.appendError("parameter_missing", "The parameter \"" + parameter.name() + "\" is missing");
+					try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+					return null;
+				}
 			}
-
-
 
 			// Check parameter type
-			if(object.has(parameter.name()) && 
-					(
-							object.isNull(parameter.name())		
-					)) {
-
+			if(object.has(parameter.name()) && (object.isNull(parameter.name()))) {
 				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" must be of type " + parameter.type());
 				try { response.send(400); } catch (IOException e) {e.printStackTrace();}
-				return;
+				return null;
 			}
 			
 			
+			// Check the type of the argument
+			if(object.has(parameter.name()) && (!parameter.type().equals(object.get(parameter.name()).getClass()))) {
+				
+				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +object.get(parameter.name()).getClass().getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
+				try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+				return null;
+			}
+
+		}
+		
+		//  send 400 if there is parameters not expected 
+		var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
+		if(notExpected.size() > 0) {
+			response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
+			try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+			return null;
+		}
+		
+		
+		// Iterate object to set result for the action
+		object.keySet().forEach((key) -> {
+			var value = object.get(key);
+			var parameter = expectedParameters.stream().filter((p) -> p.name().equals(key)).findFirst().get();
+			result.add(new Parameter<>(parameter.type(), parameter.name(), value));
 		});
 		
-		
-		return new ArrayList<Parameter<?>>();
+		return result;
 	}
 	
 	public static boolean requireId(ResponseData response, String id){

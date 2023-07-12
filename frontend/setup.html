@@ -14,10 +14,10 @@
 
         let response = await request("Core", "Setup", "SetupDB", 
         {
-            "db_hostname" : "localhost",
-            "db_username" : "root",
-            "db_password" : "",
-            "db_name" : "test"
+            "admin_mail" : "maxouducoudre@gmail.com",
+            "admin_password" : "1234",
+            "admin_firstname" : "Max",
+            "admin_lastname" : "Ducoudré"
         });
         console.log(response);
     }

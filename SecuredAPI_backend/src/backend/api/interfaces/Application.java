@@ -9,7 +9,7 @@ import backend.api.module.Core;
 public class Application {
 	private final List<Module> modules;
 	private final ConnectionPool connectionPool;
-
+	
 	public Application() {
 		connectionPool = new ConnectionPool();
 		modules = List.of(new Core());
@@ -23,6 +23,8 @@ public class Application {
 		return "api";
 	}
 
+	public String prefix() { return connectionPool.prefix();}
+
 	public Connection db() {
 		Connection conn = null;
 		while (true) {
@@ -35,6 +37,10 @@ public class Application {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public boolean isDBSetup() {
+		return true;
 	}
 
 	public void close(Connection connection) {
