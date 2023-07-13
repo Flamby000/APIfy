@@ -22,7 +22,8 @@ public record Setup() implements Library{
 	@Override
 	public List<Action> actions() {
 		return List.of(
-			new SetupDB()	
+			new SetupDB(),
+			new UpdateModule()
 		);		
 		
 	}

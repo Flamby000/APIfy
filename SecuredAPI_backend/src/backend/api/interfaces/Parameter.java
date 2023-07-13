@@ -40,7 +40,7 @@ public class Parameter<T> {
 		Objects.requireNonNull(description);
 		
 		this.value = defaultValue;
-		this.must = must;
+		this.must = this.value == null ? false : must;
 		this.name = name;
 		this.type = type;
 

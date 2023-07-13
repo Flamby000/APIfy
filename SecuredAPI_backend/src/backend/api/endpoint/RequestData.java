@@ -1,8 +1,15 @@
 package backend.api.endpoint;
 
+/*
+DATABASE :
+
+
+ */
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -28,7 +35,7 @@ public class RequestData {
 	
 	
 	
-	public RequestData(HttpExchange exchange, Application app, ResponseData response) throws IOException {
+	public RequestData(HttpExchange exchange, Application app, PreparedStatement statement, ResponseData response) throws IOException {
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
 		Objects.requireNonNull(response, "Response cannot be null");
 		Objects.requireNonNull(app, "Application cannot be null");
@@ -42,7 +49,8 @@ public class RequestData {
 		br.close();
 		isr.close();
 		params = java.net.URLDecoder.decode(payloadBuilder.toString(), "UTF-8");
-		
+		try {statement.setString(6, params());} catch(Exception e) {}
+
 		// Get module/library/action/id values
 		var path = exchange.getRequestURI().getPath();
 		var pathParts = path.split("/");
@@ -81,9 +89,10 @@ public class RequestData {
 			response.send(400); // Bad request
 			return;
 		}
-		
+		try {statement.setString(2, action);} catch(Exception e) {}
+
 		id = pathParts.length == 7 ? pathParts[6] : INVALID;
-		
+		// TODO : add ID in db ?
 		
 		token = pathParts[2];
 		if(token == null || token.isEmpty()) {
@@ -91,7 +100,7 @@ public class RequestData {
 			response.send(401); // Unauthorized
 			return;
 		}
-		
+
 
 	}
 
@@ -110,11 +119,11 @@ public class RequestData {
 
 		var json = params();
 		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
-
+		
 		// Check if the JSON is valid
 		if(json == null || json.isEmpty()) {
 			response.appendError("parameters_expected", "The action need parameters");
-			response.send(400);
+			response.send(412);
 			return null;
 		}
 		
@@ -129,7 +138,7 @@ public class RequestData {
 			if(nonMustCount == 0) response.appendError("parameter_count_wrong", "The request expect " + mustCount + " parameters");
 			else response.appendError("parameter_count_wrong", "The request expect between " + mustCount + " and " + (nonMustCount+mustCount) + " parameters");
 			
-			try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+			try { response.send(412); } catch (IOException e) {e.printStackTrace();}
 			return null;
 		}
 
@@ -143,7 +152,7 @@ public class RequestData {
 					result.add(new Parameter<>(parameter.type(), parameter.name(), parameter.value()));
 				} else {
 					response.appendError("parameter_missing", "The parameter \"" + parameter.name() + "\" is missing");
-					try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+					try { response.send(412); } catch (IOException e) {e.printStackTrace();}
 					return null;
 				}
 			}
@@ -151,7 +160,7 @@ public class RequestData {
 			// Check parameter type
 			if(object.has(parameter.name()) && (object.isNull(parameter.name()))) {
 				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" must be of type " + parameter.type());
-				try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+				try { response.send(412); } catch (IOException e) {e.printStackTrace();}
 				return null;
 			}
 			
@@ -160,7 +169,7 @@ public class RequestData {
 			if(object.has(parameter.name()) && (!parameter.type().equals(object.get(parameter.name()).getClass()))) {
 				
 				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +object.get(parameter.name()).getClass().getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
-				try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+				try { response.send(412); } catch (IOException e) {e.printStackTrace();}
 				return null;
 			}
 
@@ -170,7 +179,7 @@ public class RequestData {
 		var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
 		if(notExpected.size() > 0) {
 			response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
-			try { response.send(400); } catch (IOException e) {e.printStackTrace();}
+			try { response.send(412); } catch (IOException e) {e.printStackTrace();}
 			return null;
 		}
 		
@@ -189,7 +198,7 @@ public class RequestData {
 		if(id == RequestData.INVALID) {
 			response.appendError("id_missing", "The id of your request is missing");
 			try {
-				response.send(400);
+				response.send(412);
 			} catch(Exception e) {}
 			return true;
 		}

@@ -23,6 +23,7 @@ public record SetupDB() implements Action {
 		return List.of(
 			new Parameter<>(String.class, "admin_password", "The password of the website administrator", null, true),
 			new Parameter<>(String.class, "admin_mail", "The email of the website administrator", null, true),
+			new Parameter<>(String.class, "admin_username", "The username of the website administrator", "admin", true),
 			new Parameter<>(String.class, "admin_firstname", "The firstname of the website administrator", null, true),
 			new Parameter<>(String.class, "admin_lastname", "The lastname of the website administrator", null, true)
 		);
@@ -35,15 +36,9 @@ public record SetupDB() implements Action {
 	
 	@Override
 	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id) throws IOException {
-		//response.appendResult(new Parameter<String>("message", "Request success !"));
-		//response.appendResult(new Parameter<Integer>("valor", 1));
 		
 		//if(RequestData.requireId(response, id)) return;
 		
-		//params.forEach((param) -> System.out.println(param));
-		
-		// Find parameter with name "param1"
-
 		// Create tables 
 		try {
 			// Table module
@@ -51,9 +46,9 @@ public record SetupDB() implements Action {
 				"CREATE TABLE IF NOT EXISTS %smodule ("
 				+ "module_id VARCHAR(255) PRIMARY KEY NOT NULL, "
 				+ "description VARCHAR(255) NOT NULL, "
-				+ "version VARCHAR(10) NOT NULL, "
-				+ "author VARCHAR(255) NOT NULL, "
-				+ "author_url VARCHAR(255) NOT NULL, "
+				+ "version VARCHAR(10), "
+				+ "author VARCHAR(255), "
+				+ "author_url VARCHAR(255), "
 				+ "installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
 				+ "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
 				+ ");", app.prefix())
@@ -67,9 +62,9 @@ public record SetupDB() implements Action {
 				  + "library_id VARCHAR(255) PRIMARY KEY NOT NULL, "
 				  + "module_id VARCHAR(255) NOT NULL REFERENCES module(module_id) ON DELETE CASCADE, "
 				  + "description VARCHAR(255) NOT NULL, "
-				  + "version VARCHAR(10) NOT NULL, "
-				  + "author VARCHAR(255) NOT NULL, "
-				  + "author_url VARCHAR(255) NOT NULL, "
+				  + "version VARCHAR(10), "
+				  + "author VARCHAR(255), "
+				  + "author_url VARCHAR(255), "
 				  + "installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
 				  + "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
 				  + ");", app.prefix())
@@ -96,40 +91,54 @@ public record SetupDB() implements Action {
 			statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %suser ("
 			  + "user_id INT(10) PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-			  + "username VARCHAR(255) NOT NULL, "
+			  + "username VARCHAR(255) UNIQUE, "
 			  + "password VARCHAR(255) NOT NULL, "
-			  + "email VARCHAR(255) NOT NULL, "
-			  + "first_name VARCHAR(255) NOT NULL, "
-			  + "last_name VARCHAR(255) NOT NULL, "
-			  + "phone VARCHAR(255) NOT NULL, "
+			  + "email VARCHAR(255) NOT NULL UNIQUE, "
+			  + "first_name VARCHAR(255), "
+			  + "last_name VARCHAR(255), "
+			  + "phone VARCHAR(255), "
 			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
 			  + ");", app.prefix())
 			  );
 			statement.executeUpdate();
 			statement.close();
+
 			
-			// insert admin user
-			/*statement = db.prepareStatement(String.format(
-				"INSERT INTO %suser (email, password, first_name, last_name) "
-			   +"values (?, ?, ?, ?);", app.prefix())
-			  );
-			  */
-			
-			System.out.println(Parameter.find(params, "admin_mail").value().getClass().getCanonicalName());
-			//statement.setString(1, Parameter.find(params, "admin_mail").value());
-			//statement.setString(2, Parameter.find(params, "admin_password").value());
-			//statement.setString(3, Parameter.find(params, "admin_firstname").value());
-			//statement.setString(4, Parameter.find(params, "admin_lastname").value());
-			
-			//statement.executeUpdate();
-			//statement.close();
+			// Insert admin user
+			Integer adminId = null;
+			try {
+				statement = db.prepareStatement(String.format(
+					"INSERT INTO %suser (email, password, first_name, last_name, username) "
+				   +"values (?, ?, ?, ?, ?);", app.prefix())
+				  );
+				statement.setString(1, (String) Parameter.find(params, "admin_mail").value());
+				statement.setString(2, (String) Parameter.find(params, "admin_password").value());
+				statement.setString(3, (String) Parameter.find(params, "admin_firstname").value());
+				statement.setString(4, (String) Parameter.find(params, "admin_lastname").value());
+				statement.setString(5, (String) Parameter.find(params, "admin_username").value());
+				
+				statement.executeUpdate();
+				statement.close();
+
+				statement = db.prepareStatement("SELECT user_id FROM %suser WHERE email = ?;");
+				statement.setString(1, (String) Parameter.find(params, "admin_mail").value());
+				var result = statement.executeQuery();
+				result.next();
+				adminId = result.getInt("user_id");
+				result.close();
+				statement.close();
+
+			} catch(Exception e) {
+				res.warn("db_installation_admin_failed", 
+				String.format("The admin user %s creation failed", Parameter.find(params, "admin_mail").value()));
+			}
 
 
 			// Table session
 			statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %ssession ("
 			  + "id INT(10) PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-			  + "user_id VARCHAR(255) NOT NULL REFERENCES user(user_id) ON DELETE CASCADE, "
+			  + "user_id VARCHAR(255) DEFAULT NULL REFERENCES user(user_id) ON DELETE CASCADE, "
 			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
 			  + ");", app.prefix())
 			  );
@@ -140,7 +149,7 @@ public record SetupDB() implements Action {
 			statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %srole ("
 			  + "role_id INT(10) PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-			  + "name VARCHAR(255) NOT NULL, "
+			  + "name VARCHAR(255) NOT NULL UNIQUE,"
 			  + "description VARCHAR(255) NOT NULL, "
 			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
 			  + ");", app.prefix())
@@ -158,13 +167,32 @@ public record SetupDB() implements Action {
 			  );
 			statement.executeUpdate();
 			statement.close();
+		
+			Integer roleId = null;
+			try {
+				statement.close();
+	
+				// insert Superman role
+				statement = db.prepareStatement(String.format(
+					"INSERT INTO %srole (name, description) VALUES ('Superman', 'The superman role with all rights');", app.prefix())
+				  );
+				statement.executeUpdate();
+				statement.close();
 
-			// insert Superman role
-			statement = db.prepareStatement(String.format(
-				"INSERT INTO %srole (name, description) VALUES ('Superman', 'The superman role with all rights');", app.prefix())
-			  );
-			statement.executeUpdate();
-			statement.close();
+				// get Superman role id
+				statement = db.prepareStatement(String.format(
+					"SELECT role_id FROM %srole WHERE name = 'Superman';", app.prefix())
+				  );
+				var result = statement.executeQuery();
+				result.next();
+				roleId = result.getInt("role_id");
+				result.close();
+				statement.close();
+				
+
+			} catch(Exception e) {
+				res.warn("db_superadmin_creation_failed", "The superman role creation failed");
+			}
 			
 			// action_role
 			statement = db.prepareStatement(String.format(
@@ -177,9 +205,53 @@ public record SetupDB() implements Action {
 			statement.executeUpdate();
 			statement.close();
 			
+
+			if(roleId != null && adminId != null) {
+				// Superman role for admin
+				statement = db.prepareStatement(String.format(
+					"INSERT INTO %suser_role (user_id, role_id) VALUES (?, ?);", app.prefix())
+				  );
+				statement.setInt(1, adminId);
+				statement.setInt(2, roleId);
+				statement.executeUpdate();
+				statement.close();
+			}
+
+
+			// Table session
+			statement = db.prepareStatement(String.format(
+				"CREATE TABLE IF NOT EXISTS %ssession ("
+			  + "session_id VARCHAR(255) PRIMARY KEY NOT NULL, "
+			  + "user_id VARCHAR(255) REFERENCES user(user_id) ON DELETE CASCADE, "
+			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
+			  + ");", app.prefix())
+			  );
+			statement.executeUpdate();
+			statement.close();
+
+			// Table requests
+			statement = db.prepareStatement(String.format(
+				"CREATE TABLE IF NOT EXISTS %srequest ("
+			  + "request_id INT(10) PRIMARY KEY NOT NULL AUTO_INCREMENT, "
+			  + "session_id VARCHAR(255) DEFAULT NULL REFERENCES session(id) ON DELETE CASCADE, "
+			  + "action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE, "
+			  + "code INT(3) NOT NULL, "
+			  + "success BOOLEAN NOT NULL, "
+			  + "method VARCHAR(30) NOT NULL, "
+			  + "in_parameters VARCHAR(2000), "
+			  + "out_parameters VARCHAR(2000), "
+			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
+			  + ");", app.prefix())
+			  );
+			statement.executeUpdate();
+			statement.close();
+
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 			res.err("db_error", e.getMessage());
+
+			res.send(500);
 			return;
 		}
         

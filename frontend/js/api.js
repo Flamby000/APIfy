@@ -1,14 +1,29 @@
 // Send request to the API with async fetch
 
-async function request(module, library, action, params = false)
+function token() {
+    return document.cookie.split('=')[1];
+} 
+
+function setToken(token, expiration) {
+    let date = new Date();
+    date.setTime(date.getTime() + (expiration * 24 * 60 * 60 * 1000));
+    let expires = "expires="+date.toUTCString();
+    document.cookie = "token=" + token + ";" + expires + ";path=/";
+}
+
+async function request(module, library, action, id = false, method = "POST", params = false)
 {
     //console.log("Requesting API: " + module + "/" + library + "/" + action);
 
     if(params != false) params = JSON.stringify(params);
 
-    let result = await $.ajax(`http://localhost:4080/api/1234/${module}/${library}/${action}`, 
+    // Create cookie 'token' if it doesn't exist with 1 day expiration
+    if(token() == undefined) setToken(Math.random().toString(36).substring(7), 1);
+
+    console.log(method)
+    let result = await $.ajax(`http://localhost:4080/api/${token()}/${module}/${library}/${action}${id ? '/' + id : ''}`, 
     {
-        type: 'POST',
+        type: method,
         data : params
     });
 
