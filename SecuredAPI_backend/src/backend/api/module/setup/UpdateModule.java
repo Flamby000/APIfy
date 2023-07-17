@@ -72,6 +72,7 @@ public record UpdateModule() implements Action {
 			}
 			statement.close();
 
+			// TODO : get role of Application.SUPER_ADMIN and apply it to every actions
 
 			module.libraries().forEach((library) -> 
 			{

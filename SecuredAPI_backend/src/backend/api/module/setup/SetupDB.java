@@ -120,7 +120,7 @@ public record SetupDB() implements Action {
 				statement.executeUpdate();
 				statement.close();
 
-				statement = db.prepareStatement("SELECT user_id FROM %suser WHERE email = ?;");
+				statement = db.prepareStatement(String.format("SELECT user_id FROM %suser WHERE email = ?;", app.prefix()));
 				statement.setString(1, (String) Parameter.find(params, "admin_mail").value());
 				var result = statement.executeQuery();
 				result.next();
@@ -130,7 +130,8 @@ public record SetupDB() implements Action {
 
 			} catch(Exception e) {
 				res.warn("db_installation_admin_failed", 
-				String.format("The admin user %s creation failed", Parameter.find(params, "admin_mail").value()));
+				String.format("The admin user %s creation failed : ", Parameter.find(params, "admin_mail").value()));
+				res.warn("db_error", e.getMessage());
 			}
 
 
@@ -164,14 +165,14 @@ public record SetupDB() implements Action {
 	
 				// insert Superman role
 				statement = db.prepareStatement(String.format(
-					"INSERT INTO %srole (name, description) VALUES ('Superman', 'The superman role with all rights');", app.prefix())
+					"INSERT INTO %srole (name, description) VALUES ('%s', 'The superman role with all rights');", app.prefix(), Application.SUPERMAN_ROLE)
 				  );
 				statement.executeUpdate();
 				statement.close();
 
 				// get Superman role id
 				statement = db.prepareStatement(String.format(
-					"SELECT role_id FROM %srole WHERE name = 'Superman';", app.prefix())
+					"SELECT role_id FROM %srole WHERE name = '%s';", app.prefix(), Application.SUPERMAN_ROLE)
 				  );
 				var result = statement.executeQuery();
 				result.next();
@@ -228,7 +229,7 @@ public record SetupDB() implements Action {
 			  + "code INT(3) NOT NULL, "
 			  + "success BOOLEAN NOT NULL, "
 			  + "method VARCHAR(30) NOT NULL, "
-			  + "in_parameters VARCHAR(2000), "
+			  + "in_parameters VARCHAR(2000) DEFAULT NULL, "
 			  + "out_parameters VARCHAR(2000), "
 			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
 			  + ");", app.prefix())

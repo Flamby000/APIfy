@@ -12,6 +12,11 @@ public class Application {
 	private final List<Module> modules;
 	private final ConnectionPool connectionPool;
 	
+	// constante DEBUG ON
+	public static final String SUPERMAN_ROLE = "Superman";
+	
+	
+	
 	public Application() {
 		connectionPool = new ConnectionPool();
 		modules = List.of(new Core());
@@ -44,6 +49,7 @@ public class Application {
 	public boolean isDBSetup() {
 		return true;
 	}
+	
 	
 	public PreparedStatement createLogStatement(Connection db) {
 		PreparedStatement logStatement = null;

@@ -7,6 +7,7 @@ import java.util.Objects;
 import com.sun.net.httpserver.HttpHandler;
 
 import backend.api.interfaces.Application;
+import backend.api.permission.User;
 
 import com.sun.net.httpserver.HttpExchange;
 
@@ -36,13 +37,9 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		var response = new ResponseData(exchange, app, logStatement, logDB);
 		var request = new RequestData(exchange, app, logStatement, response); // check the syntax and extract the data
-		if (response.isClosed())
-			return; // If the syntax is incorrect
+		if (response.isClosed()) return; 
 
-		try {
-			logStatement.setString(5, exchange.getRequestMethod());
-		} catch (Exception e) {
-		}
+		try {logStatement.setString(5, exchange.getRequestMethod());} catch (Exception e) {}
 
 		
 		
@@ -67,16 +64,14 @@ public record RequestHandler(Application app) implements HttpHandler {
 		// Check if module/library/action are implemented (Error 501)
 		var module = app.getModule(request.moduleName());
 		if (module == null) {
-			response.appendError("module_not_implemented",
-					"The module \"" + request.moduleName() + "\" is not implemented");
+			response.appendError("module_not_implemented", "The module \"" + request.moduleName() + "\" is not implemented");
 			response.send(501);
 			return;
 		}
 
 		var library = module.getLibrary(request.libraryName());
 		if (library == null) {
-			response.appendError("library_not_implemented",
-					"The library \"" + request.libraryName() + "\" is not implemented");
+			response.appendError("library_not_implemented", "The library \"" + request.libraryName() + "\" is not implemented");
 			response.send(501);
 			return;
 		}
@@ -91,20 +86,31 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		// Check the validity of the method
 		if (!exchange.getRequestMethod().equals(action.method())) {
-			response.appendError("method_not_allowed", "The method \"" + exchange.getRequestMethod()
-					+ "\" is not allowed for the action " + action.name() + ". Try the method " + action.method());
+			response.appendError("method_not_allowed", "The method \"" + exchange.getRequestMethod() + "\" is not allowed for the action " + action.name() + ". Try the method " + action.method());
 			response.send(405);
 			return;
 		}
 
 		// Check action parameters on instance
 		var params = request.getParameters(action.parameters(), response);
-		if (params == null)
-			return;
+		if (params == null) return;
+		User user = null;
 
 		if (!request.actionName().equals("SetupDB")) {
+			
 			if (!action.isGuestAction()) {
-
+				try {
+					user = new User(logDB, app, request.token());
+				} catch(Exception e) {
+					response.appendError("guest_not_allowed", String.format("The action %s is not allowed for unauthenticated users", action.name()));
+					response.send(401);
+					return;
+				}
+				
+				System.out.println(user);
+				
+				
+				
 				// Check permissions (rights on DB)
 				// TODO
 
