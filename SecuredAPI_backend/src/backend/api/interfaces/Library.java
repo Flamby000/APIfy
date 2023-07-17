@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface Library {
 	default String name() { return this.getClass().getSimpleName(); }
-	String desciption();
+	String description();
 	String version();
 	String author();
 	String url();

@@ -138,7 +138,7 @@ public class RequestData {
 			if(nonMustCount == 0) response.appendError("parameter_count_wrong", "The request expect " + mustCount + " parameters");
 			else response.appendError("parameter_count_wrong", "The request expect between " + mustCount + " and " + (nonMustCount+mustCount) + " parameters");
 			
-			try { response.send(412); } catch (IOException e) {e.printStackTrace();}
+			response.send(412);
 			return null;
 		}
 
@@ -152,7 +152,7 @@ public class RequestData {
 					result.add(new Parameter<>(parameter.type(), parameter.name(), parameter.value()));
 				} else {
 					response.appendError("parameter_missing", "The parameter \"" + parameter.name() + "\" is missing");
-					try { response.send(412); } catch (IOException e) {e.printStackTrace();}
+					response.send(412);
 					return null;
 				}
 			}
@@ -160,7 +160,7 @@ public class RequestData {
 			// Check parameter type
 			if(object.has(parameter.name()) && (object.isNull(parameter.name()))) {
 				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" must be of type " + parameter.type());
-				try { response.send(412); } catch (IOException e) {e.printStackTrace();}
+				response.send(412);
 				return null;
 			}
 			
@@ -169,7 +169,7 @@ public class RequestData {
 			if(object.has(parameter.name()) && (!parameter.type().equals(object.get(parameter.name()).getClass()))) {
 				
 				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +object.get(parameter.name()).getClass().getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
-				try { response.send(412); } catch (IOException e) {e.printStackTrace();}
+				response.send(412);
 				return null;
 			}
 
@@ -179,7 +179,7 @@ public class RequestData {
 		var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
 		if(notExpected.size() > 0) {
 			response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
-			try { response.send(412); } catch (IOException e) {e.printStackTrace();}
+			response.send(412);
 			return null;
 		}
 		

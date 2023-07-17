@@ -8,7 +8,7 @@ import backend.api.module.setup.Setup;
 public record Core() implements Module {
 
 	@Override
-	public String desciption() { return "The main module of the API application"; }
+	public String description() { return "The main module of the API application"; }
 
 	@Override
 	public String version() { return "1.0"; }

@@ -15,10 +15,6 @@ public class Application {
 	public Application() {
 		connectionPool = new ConnectionPool();
 		modules = List.of(new Core());
-		
-
-
-		
 	}
 
 	public List<Module> modules() {
@@ -75,7 +71,7 @@ public class Application {
 		try {
 			
 			// Check if token exists
-			var tokenStatement = db.prepareStatement(String.format("SELECT id FROM %ssession WHERE id = ?;", prefix()));
+			var tokenStatement = db.prepareStatement(String.format("SELECT session_id FROM %ssession WHERE session_id = ?;", prefix()));
 			tokenStatement.setString(1, token);
 			var tokenResult = tokenStatement.executeQuery();
 			if(!tokenResult.next()) {
@@ -83,7 +79,7 @@ public class Application {
 				tokenStatement.close();
 				
 				// Insert token
-				tokenStatement = db.prepareStatement(String.format("INSERT INTO %ssession (id) VALUES (?);", prefix()));
+				tokenStatement = db.prepareStatement(String.format("INSERT INTO %ssession (session_id) VALUES (?);", prefix()));
 				tokenStatement.setString(1, token);
 				tokenStatement.executeUpdate();
 				tokenStatement.close();

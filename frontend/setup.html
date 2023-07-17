@@ -12,17 +12,27 @@
     <script>
     window.onload = async function() {
 
+
+
         // let response = await request("Core", "Setup", "SetupDB", 
-        // {
+        //     id = false,
+        //     method = "POST",
+        //     {
         //     "admin_mail" : "maxouducoudre@gmail.com",
         //     "admin_password" : "1234",
         //     "admin_firstname" : "Max",
         //     "admin_lastname" : "Ducoudré"
-        // });
+        //     }
+        // );
         // console.log(response);
-        let response = await request("Core", "Setup", "UpdateModule",
-        id = "Core",
-        method = "POST");
+
+
+        response = await request(
+            "Core", "Setup", "UpdateModule",
+            id = "Core",
+            method = "POST" // PATCH
+        );
+
         console.log(response);
     }
     </script>

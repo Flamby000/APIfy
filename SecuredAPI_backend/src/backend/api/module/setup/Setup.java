@@ -8,7 +8,7 @@ import backend.api.interfaces.Library;
 public record Setup() implements Library{
 
 	@Override
-	public String desciption() { return "Used to setup the API and fill the database with default user and data"; }
+	public String description() { return "Used to setup the API and fill the database with default user and data"; }
 
 	@Override
 	public String version() { return "1.0"; }

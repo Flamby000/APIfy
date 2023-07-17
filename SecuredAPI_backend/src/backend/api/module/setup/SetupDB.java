@@ -134,16 +134,6 @@ public record SetupDB() implements Action {
 			}
 
 
-			// Table session
-			statement = db.prepareStatement(String.format(
-				"CREATE TABLE IF NOT EXISTS %ssession ("
-			  + "id INT(10) PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-			  + "user_id VARCHAR(255) DEFAULT NULL REFERENCES user(user_id) ON DELETE CASCADE, "
-			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
-			  + ");", app.prefix())
-			  );
-			statement.executeUpdate();
-			statement.close();
 
 			// Table role
 			statement = db.prepareStatement(String.format(
@@ -233,7 +223,7 @@ public record SetupDB() implements Action {
 			statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %srequest ("
 			  + "request_id INT(10) PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-			  + "session_id VARCHAR(255) DEFAULT NULL REFERENCES session(id) ON DELETE CASCADE, "
+			  + "session_id VARCHAR(255) DEFAULT NULL REFERENCES session(session_id) ON DELETE CASCADE, "
 			  + "action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE, "
 			  + "code INT(3) NOT NULL, "
 			  + "success BOOLEAN NOT NULL, "

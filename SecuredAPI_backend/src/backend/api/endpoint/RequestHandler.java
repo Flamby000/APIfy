@@ -24,6 +24,9 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
 
+		
+		// TODO : manage timeout (504 Gateway Timeout)
+		
 		// token
 
 		// Set CORS headers
@@ -41,6 +44,8 @@ public record RequestHandler(Application app) implements HttpHandler {
 		} catch (Exception e) {
 		}
 
+		
+		
 		if (!request.actionName().equals("SetupDB")) {
 
 			app.registerConnection(logDB, request.token(), logStatement);
@@ -116,7 +121,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 		} catch (Exception e) {
 			e.printStackTrace();
 			response.appendError("unhandled_error",
-					"Your \"" + exchange.getRequestMethod() + "\" request raise an error : " + e);
+					"Your \"" + exchange.getRequestMethod() + "\" request raise an error : " + e.getMessage());
 			response.send(500);
 		}
 
@@ -135,7 +140,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 	public static void allowCORS(HttpExchange exchange) {
 		var headers = exchange.getResponseHeaders();
 		headers.add("Access-Control-Allow-Origin", "*"); // Allow requests from any origin
-		System.out.println(exchange.getRequestMethod().toString());
+		//System.out.println(exchange.getRequestMethod().toString());
 		headers.add("Access-Control-Allow-Methods", exchange.getRequestMethod().toString()); // Allow only POST requests
 		headers.add("Access-Control-Allow-Headers", "Content-Type"); // Allow Content-Type header
 	}

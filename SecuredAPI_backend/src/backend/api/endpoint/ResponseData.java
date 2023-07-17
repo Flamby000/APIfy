@@ -86,7 +86,7 @@ public class ResponseData {
 	
 
 	
-	public void send(int code) throws IOException {
+	public void send(int code) {
 		
 		var res = new JSONObject();
 		res.put("success", success());
@@ -96,7 +96,7 @@ public class ResponseData {
 		        .put("description", error.getValue()))
 		    .collect(Collectors.toList()));
 
-		res.put("result", result.stream()
+		res.put("data", result.stream()
 			.map(parameter -> new JSONObject()
 				.put("name", parameter.name())
 				.put("value", parameter.stringifyValue()))
@@ -118,8 +118,14 @@ public class ResponseData {
 			statement.setString(7, response);
 		} catch (SQLException e) {e.printStackTrace();}
 
-        exchange.sendResponseHeaders(code, response.getBytes().length);
-        exchange.getResponseBody().write(response.getBytes());
+        try {
+			exchange.sendResponseHeaders(code, response.getBytes().length);
+
+			exchange.getResponseBody().write(response.getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
+			// TODO : END APP
+		}
         exchange.close();
         
 		try {
