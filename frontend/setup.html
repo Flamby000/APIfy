@@ -18,7 +18,6 @@
                 <h1>Setup Database</h1>
                 <p>The database is not configured</p>
                 <form id="form-db">
-                    <!-- admin main, pass, firstname and lastname -->
                     <label for="admin_mail">Admin mail</label>
                     <input type="email" name="admin_mail" id="admin_mail" required>
 
@@ -56,17 +55,27 @@
 
             <div id="category-content" class="hide"></div>
 
-
-            <div id="popup" class="hide"></div>
+            <div id="modal" class="hide">
+                <div id="modal-content">
+                    <h2 id="modal-title">Modal</h2> 
+                    <button id="modal-close">X</button>
+                    <hr>
+                    <div id="modal-text"></div>
+                </div>
+            </div>
 
         </div>
     </main>
 
     <script>
     let category_content;
+    let modal;
+    let roles = [];
+    let current_modal_id = false;
 
     window.onload = async function() {
         category_content = document.getElementById("category-content");
+        modal = document.getElementById("modal");
         checkDBSetup();
         /* Categories click */
         let categories = document.getElementById("categories").getElementsByTagName("li");
@@ -75,6 +84,29 @@
                 setCategory(category);
             });
         });
+
+        let role_response = await request("Core", "Permission", "Role", false, "GET");
+        roles = role_response.data.roles;
+
+    }
+
+
+    function openModal(title, content, id = false) {
+        
+        id ? current_modal_id = id : current_modal_id = false;
+
+        modal.classList.remove("hide");
+        document.getElementById("modal-title").innerText = title;
+        document.getElementById("modal-text").appendChild(content)
+        document.getElementById("modal-close").addEventListener("click", function() {
+            closeModal();
+        });
+    }
+
+    function closeModal() {
+        modal.classList.add("hide");
+        document.getElementById("modal-text").innerHTML = "";
+        document.getElementById("modal-title").innerText = "";
     }
 
     async function checkDBSetup() {
@@ -86,7 +118,6 @@
             document.getElementById("categories").classList.remove("hide");
             document.getElementById("category-content").classList.remove("hide");
             document.getElementById("nav-history").classList.remove("hide");
-            document.getElementById("popup").classList.remove("hide");
         }
     }
 
@@ -119,8 +150,8 @@
         category_user.appendChild(createSubPart("Users list"));
         
         category_user.appendChild(createTable(response.data.users,
-            {    // Set columns name and order
-                id : "ID",
+            { 
+                id : "User ID",
                 email :"E-mail",
                 username : "Login",
                 firstName : "First name",
@@ -129,18 +160,158 @@
             },
             {   
                 delete : deleteUser
+            },
+            {
+                id : userDetails
             }
         ));
 
-
         return category_user;
+    }
+
+
+    async function userDetails(id) {
+        let response = await request("Core", "Permission", "User", id, "GET");
+        if(response.success) {
+
+
+            let user = response.data.user;
+            let user_details = document.createElement("div");
+
+            let user_data = document.createElement("div");
+            user_data.classList.add("user-data");
+            user_data.innerHTML =`
+                <p><b>First name</b> : ${user.firstName}</p>
+                <p><b>Last name</b> : ${user.lastName}</p>
+                <p><b>E-mail</b> : ${user.email}</p>
+                <p><b>Username</b> : ${user.username}</p>
+                <p><b>Creation date</b> : ${user.creationDate}</p>
+            `;
+            user_details.appendChild(user_data);
+            user_details.appendChild(document.createElement("hr"));
+
+            let user_roles = document.createElement("div");
+            user_roles.classList.add("user-roles");
+            user_roles.innerHTML = `
+                <h3>Roles</h3>
+            `;
+            user_roles.appendChild(createTable(response.data.roles,
+                {
+                    id : "Role ID",
+                    name : "Name",
+                    description : "Description",
+                    creationDate : "Creation date"
+                },
+                {   
+                    Unassign : removeRole
+                },
+                {
+                    id : roleDetails
+                },
+                {
+                    label : "Assign",
+                    function : addRole,
+                    selectLabelColumn : "name",
+                    options : roles
+                }
+            ));
+            user_details.appendChild(user_roles);
+
+            openModal(`${user.id} - ${user.firstName} ${user.lastName.toUpperCase()}`, user_details, user.id);
+        } else {
+            promptError(response);
+        }
+    }
+
+    async function removeRole(id, lineElement) {
+        let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
+            "role_id" : parseInt(id),
+            "user_id" : parseInt(current_modal_id)
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function addRole(id) {
+        let response = await request("Core", "Permission", "RoleAssign", false, "POST", {
+            "role_id" : parseInt(id),
+            "user_id" : parseInt(current_modal_id)
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function roleDetails(id) {
+        let response = await request("Core", "Permission", "role", id, "GET");
+        if(response.success) {
+            // TODO : add role details
+            console.log(response);
+        } else {
+            promptError(response);
+        }
+    }
+
+    async function deleteUser(id, lineElement) {
+        let response = await request("Core", "Permission", "User", id, "DELETE");
+        if(!response.success) promptError(response);
+
+        return response.success;
+    }
+
+
+
+    function promptError(response) {
+        let errors = "";
+        response.errors.forEach(function(error) {
+            errors += error.error + " : " + error.description + "\n";
+        });
+
+        response.warnings.forEach(function(warning) {
+            errors += warning.warning + " : " + warning.description + "\n";
+        });
+
+        alert(errors);
+    }
+
+    function createSubPart(title) {
+        let subpart = document.createElement("div");
+
+        let subpart_title = document.createElement("h3");
+        subpart_title.classList.add("subpart-title");
+        subpart_title.innerText = title;
+        subpart.appendChild(subpart_title);
+
+
+        subpart.appendChild(document.createElement("hr"));
+        return subpart;
+    }
+
+
+    async function setupDBForm() {
+        let form = document.getElementById("form-db");
+        form.addEventListener("submit", function(e) {e.preventDefault();});
+        let admin_mail = document.getElementById("admin_mail").value;
+        let admin_password = document.getElementById("admin_password").value;
+        let admin_firstname = document.getElementById("admin_firstname").value;
+        let admin_lastname = document.getElementById("admin_lastname").value;
+
+        let response = await request("Core", "Setup", "SetupDB", false, "POST",
+            {
+                "admin_mail" : admin_mail,
+                "admin_password" : admin_password,
+                "admin_firstname" : admin_firstname,
+                "admin_lastname" : admin_lastname
+            }
+        );
     }
 
 
 
 
 
-    function createTable(data, columns, actions) {
+
+
+    function createTable(data, columns, delete_actions, references, create = false) {
         let table = document.createElement("table");
         table.classList.add("sortable");
         table.classList.add("col-10");
@@ -151,7 +322,8 @@
         for(let column in columns) {
             let th = document.createElement("th");
             th.innerText = columns[column];
-            
+    
+
             // add sort button on columns
             let sort_button = document.createElement("span");
             sort_button.classList.add("sort-button");
@@ -159,7 +331,6 @@
             sort_button.addEventListener("click", function() {
                 sortTable(table, column, sort_button.innerText == "▲" ? "desc" : "asc");
                 sort_button.innerText = sort_button.innerText == "▲" ? "▼" : "▲";
-
             });
             th.appendChild(sort_button);
             tr.appendChild(th);
@@ -186,6 +357,17 @@
             let tr = document.createElement("tr");
             for(let column in renamed_data[i]) {
                 let td = document.createElement("td");
+                
+                if(references[column]) {
+                   td.classList.add("reference");
+                    td.addEventListener("click", function() {
+                        references[column](renamed_data[i][column]);
+                    });
+                } else {
+                    td.innerText = renamed_data[i][column];
+                }
+
+
                 td.classList.add(column);
                 td.innerText = renamed_data[i][column];
                 tr.appendChild(td);
@@ -194,37 +376,134 @@
 
             // add actions buttons
             let td = document.createElement("td");
-            for(let action in actions) {
+            for(let action in delete_actions) {
                 let button = document.createElement("button");
                 button.innerText = action;
                 button.addEventListener("click", function() {
-                    actions[action](renamed_data[i].id);
+                    if(delete_actions[action](renamed_data[i].id)) {
+                        tr.remove();
+                    }
                 });
                 td.appendChild(button);
             }
             tr.appendChild(td);
-
             tbody.appendChild(tr);
+
+
         }
 
+        // create element
+        if(create) {
+            let tr = document.createElement("tr");
+            tr.classList.add("create-element");
+            let select = document.createElement("select");
+            let option = document.createElement("option");
+            option.innerText = "Select";
+            option.disabled = true;
+            option.selected = true;
+            select.appendChild(option);
+            for(let option in create.options) {
+                let option_element = document.createElement("option");
+                option_element.innerText = create.options[option][create.selectLabelColumn];
+                option_element.value = create.options[option].id;
+                select.appendChild(option_element);
+            }
+
+            for(let column in columns) {
+                let td = document.createElement("td");
+                td.classList.add(column);
+                if(column == create.selectLabelColumn) {
+                    td.appendChild(select);
+                }
+                tr.appendChild(td);
+            }
+
+            let button = document.createElement("button");
+
+            select.addEventListener("change", function() {
+                // Set all td of the line with the value of the selected role
+                let tds = tr.getElementsByTagName("td");
+                for(let i = 0; i < tds.length-1; i++) {
+                    if(tds[i].classList[0] != create.selectLabelColumn)
+                    tds[i].innerText = create.options[select.selectedIndex - 1][tds[i].classList[0]];
+
+                    // reference click 
+                    if(references[tds[i].classList[0]]) {
+                        tds[i].classList.add("reference");
+                        tds[i].addEventListener("click", function() {
+                            references[tds[i].classList[0]](select.value);
+                        });
+                    }
+
+                }
+                button.disabled = false;
+            });
+
+            // add create button
+            let td = document.createElement("td");
+            button.disabled = true;
+            button.innerText = create.label;
+            button.addEventListener("click", async function() {
+                let creation_success = await create.function(select.value)
+                if(creation_success) {
+                    // add new line with the selected role
+                    let new_tr = document.createElement("tr");
+                    for(let column in columns) {
+                        let td = document.createElement("td");
+                        td.classList.add(column);
+                        td.innerText = create.options[select.selectedIndex - 1][td.classList[0]];
+
+                        if(references[column]) {
+                            td.classList.add("reference");
+                            td.addEventListener("click", function() {
+                                references[column](select.value);
+                            });
+                        }
+
+                        new_tr.appendChild(td);
+                    }
+                    let td = document.createElement("td");
+                    for(let action in delete_actions) {
+                        let button = document.createElement("button");
+                        button.innerText = action;
+                        button.addEventListener("click", function() {
+                            if(delete_actions[action](select.value)) {
+                                new_tr.remove();
+                            }
+                        });
+
+                       
+                        td.appendChild(button);
+                    }
+                    new_tr.appendChild(td);
+                    tbody.appendChild(new_tr);
+                    /* Exchange 2 last lines */
+                    tbody.insertBefore(new_tr, tbody.lastChild);
+                    tbody.insertBefore(tbody.lastChild, tbody.lastChild.previousSibling);
+                    
+                }
+            });
+            td.appendChild(button);
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        }
 
 
         table.appendChild(tbody);
         return table;
     }
 
-
-    async function deleteUser(id) {
-
-        let response = await request("Core", "Permission", "User", id, "DELETE");
-        console.log(response);
-
-    }
-
     function sortTable(table, column, order) {
         let tbody = table.getElementsByTagName("tbody")[0];
         let rows = tbody.getElementsByTagName("tr");
         let rows_array = Array.from(rows);
+
+        let create_element_row = tbody.getElementsByClassName("create-element")[0];
+        if(create_element_row) {
+            rows_array.splice(rows_array.indexOf(create_element_row), 1);
+        }
+
+
         rows_array.sort(function(a, b) {
             let a_value = a.getElementsByClassName(column)[0].innerText;
             let b_value = b.getElementsByClassName(column)[0].innerText;
@@ -244,46 +523,13 @@
         rows_array.forEach(function(row) {
             tbody.appendChild(row);
         });
+        if(create_element_row) {
+            tbody.appendChild(create_element_row);
+        }
+        
     }
 
 
-    function createSubPart(title) {
-        let subpart = document.createElement("div");
-
-        let subpart_title = document.createElement("h3");
-        subpart_title.classList.add("subpart-title");
-        subpart_title.innerText = title;
-        subpart.appendChild(subpart_title);
-
-
-        subpart.appendChild(document.createElement("hr"));
-        return subpart;
-    }
-
-
-
-
-
-
-
-
-    async function setupDBForm() {
-        let form = document.getElementById("form-db");
-        form.addEventListener("submit", function(e) {e.preventDefault();});
-        let admin_mail = document.getElementById("admin_mail").value;
-        let admin_password = document.getElementById("admin_password").value;
-        let admin_firstname = document.getElementById("admin_firstname").value;
-        let admin_lastname = document.getElementById("admin_lastname").value;
-
-        let response = await request("Core", "Setup", "SetupDB", false, "POST",
-            {
-                "admin_mail" : admin_mail,
-                "admin_password" : admin_password,
-                "admin_firstname" : admin_firstname,
-                "admin_lastname" : admin_lastname
-            }
-        );
-    }
 
 
     

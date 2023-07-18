@@ -26,16 +26,39 @@ public record User() implements Action {
 			if(id == RequestData.INVALID) {
 				res.addArray("users", backend.api.permission.User.users(db, app).stream().map(user -> user.toMap()).collect(Collectors.toList()));
 				res.send(200);
+				return;
 				
 			} else {
 				/* Search "id" user */
-				res.send(501);
+				if(RequestData.requireId(res, id)) return;
+				var user = backend.api.permission.User.user(db, app, Integer.valueOf(id));
+				if(user != null) {
+					res.addMap("user", user.toMap());
+					res.addArray("roles", user.roles().stream().map(role -> role.toMap()).collect(Collectors.toList()));
+					res.send(200);
+					return;
+				} else {
+					res.appendError("not_found", "The user wasn't found");
+					res.send(404);
+					return;
+				}
 			}
 		}else if(method.equals(Method.DELETE)) {
 			
-			res.send(501);
+			//if(RequestData.requireId(res, id)) return;
+
+			if(backend.api.permission.User.delete(db, app, id)) {
+				res.addString("message", "User deleted");
+				res.send(200);
+				return;
+			} else {
+				res.appendError("not_found", "The user to delete wasn't found");
+				res.send(404);
+				return;
+			}
 		}
-	
-		
+		res.appendError("unhandled_error", "");
+
+		res.send(500);
 	}	
 }

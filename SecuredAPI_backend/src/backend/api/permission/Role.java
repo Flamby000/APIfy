@@ -2,6 +2,10 @@ package backend.api.permission;
 
 import java.sql.Connection;
 import java.sql.Date;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import backend.api.interfaces.Action;
@@ -31,6 +35,34 @@ public class Role {
 		this.id = id;
     }
 
+	public Map<String, String> toMap() {
+		var map = new HashMap<String, String>();
+		map.put("name", name);
+		map.put("description", description);
+		map.put("creationDate", creationDate.toString());
+		map.put("id", String.valueOf(id));
+		return map;
+	}
+
+	public static List<Role> roles(Connection db, Application app) {
+		try {
+			var statement = db.prepareStatement(String.format("SELECT * FROM %srole;", app.prefix()));
+			var result = statement.executeQuery();
+			var roles = new ArrayList<Role>();
+			while(result.next()) {
+				var role = new Role(db, app, result.getInt("role_id"), result.getString("role_name"), result.getString("role_description"), result.getDate("role_created_at"));
+				roles.add(role);
+			}
+			result.close();
+			statement.close();
+			return roles;
+		} catch(Exception e) {
+			e.printStackTrace();
+			return List.of();
+		}
+	}
+
+	
 	public boolean canPerform(Action action) {
 		return false;
 	}

@@ -60,8 +60,8 @@ public class ResponseData {
 		appendWarning(warning, description);
 	}
 	
-	public boolean success() {
-		return errors.size() == 0;
+	public boolean success(int code) {
+		return errors.size() == 0 && code < 400; // TODO see codes
 	}
 	
 	public void addString(String name, String value) {
@@ -81,7 +81,7 @@ public class ResponseData {
 	}
 
 	public void addMap(String name, Map<?, ?> value) {
-		//appendResult(new Parameter<>(JSONObject.class, name, new JSONObject(value)));
+		appendResult(new Parameter<>(JSONObject.class, name, new JSONObject(value)));
 	}
 	
 	
@@ -90,7 +90,7 @@ public class ResponseData {
 	public void send(int code) {
 		
 		var res = new JSONObject();
-		res.put("success", success());
+		res.put("success", success(code) );
 		res.put("errors", errors.entrySet().stream()
 		    .map(error -> new JSONObject()
 		        .put("error", error.getKey())
@@ -119,7 +119,7 @@ public class ResponseData {
 		
 		try {
 			statement.setInt(3, code);
-			statement.setBoolean(4, success());
+			statement.setBoolean(4, success(code));
 			statement.setString(7, response);
 		} catch (SQLException e) {e.printStackTrace();}
 

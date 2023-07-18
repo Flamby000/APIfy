@@ -4,6 +4,8 @@
 
 html, main, body {
     min-height: 100%;
+    font-size: 1.5vw;
+
 }
 
 body {
@@ -60,7 +62,13 @@ ul {
 #categories {
     background-color :#154c79;
     color:white;
+
+    /* Take all the height */
     height: 100%;
+    position: fixed;
+
+    
+    
 }
 #categories li {
     display: flex;
@@ -103,7 +111,52 @@ ul {
     vertical-align: middle;    
 }
 
-/* Popup */
+
+/* Modal */
+#modal {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    background-color: rgba(0,0,0,0.4);
+    overflow: auto;
+
+}
+
+#modal-content {
+   /* Center elements */
+    margin: 2% auto;
+    padding: 1vw;
+    width: 95%;
+    background-color: white;
+    border-radius: 10px;
+    border: 1px solid #888;
+    box-shadow: 0 0 10px 0 rgba(0,0,0,0.2);
+
+    /* Height follow content */
+    height: auto;
+    overflow: auto;
+
+}
+
+#modal-content #modal-title {
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 1vw;
+    color: #154c79;
+}
+
+#modal-content #modal-close {
+    float : right;
+    top: 0;
+    right: 0;
+    font-size: 1vw;
+    padding: 0.5vw;
+    cursor: pointer;
+}
 
 
 /* Sortable arrays */
@@ -114,14 +167,23 @@ ul {
 .sortable td{
     /* padding-left:2vw;
     padding-right:2vw; */
+
     padding:0px;
-    /* text-align: center; */
+    text-align: center; 
 
 }
 
 /* event sortable tr dark gray background */
 .sortable tr:nth-child(even) {
     background-color: #f2f2f2;
+}
+
+
+.reference {
+    color: #154c79;
+    font-weight: bold;
+    text-decoration: underline; 
+    cursor: pointer;
 }
 
 .sortable {

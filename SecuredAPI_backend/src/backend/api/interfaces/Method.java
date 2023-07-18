@@ -16,6 +16,6 @@ public record Method() {
 	
 	
 	public static boolean needParameters(String method) {
-		return method.equals(PUT) || method.equals(POST) || method.equals(PATCH);
+		return method.equals(PUT) || method.equals(POST) || method.equals(PATCH) || method.equals(DELETE);
 	}
 }

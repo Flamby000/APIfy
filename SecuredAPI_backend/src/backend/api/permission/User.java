@@ -103,6 +103,20 @@ public class User {
     public String phone() { return phone; }
     public Date creationDate() { return creationDate; }
 
+
+    public static boolean delete(Connection db, Application app, String id) {
+        try {
+            var statement = db.prepareStatement(String.format(
+                    "DELETE FROM %suser WHERE user_id = ?;"
+                    , app.prefix()));
+            statement.setInt(1, Integer.parseInt(id));
+            statement.executeUpdate();
+            statement.close();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
     
     public Map<String, String> toMap() {
         var map = new HashMap<String, String>();
@@ -118,6 +132,54 @@ public class User {
         
     }
     
+
+    public List<Role> roles() {
+        /* Get roles of the user from api_action_role and api_user_role*/
+        
+        try {
+            var statement = db.prepareStatement(String.format(
+                    "SELECT * FROM %suser NATURAL JOIN %suser_role NATURAL JOIN %srole WHERE user_id = ?;"
+                    , app.prefix(), app.prefix(), app.prefix()));
+            statement.setInt(1, id);
+            var result = statement.executeQuery();
+            
+            var roles = new ArrayList<Role>();
+            
+            while(result.next()) {
+                roles.add(new Role(db, app, result.getInt("role_id"), result.getString("role_name"), result.getString("role_description"), result.getDate("role_created_at")));
+            }
+            
+            result.close();
+            statement.close();
+            
+            return roles;
+        } catch (SQLException e) {
+            return null;
+        }
+    }
+
+    public static User user(Connection db, Application app, int id) {
+        try {
+            var statement = db.prepareStatement(String.format(
+                    "SELECT * FROM %suser WHERE user_id = ?;"
+                    , app.prefix()));
+            statement.setInt(1, id);
+            var result = statement.executeQuery();
+            if(!result.next()) {
+                result.close();
+                statement.close();
+                return null;
+            } else {
+                var user = new User(db, app, result.getInt("user_id"), result.getString("username"), result.getString("password"), result.getString("email"), result.getString("first_name"), result.getString("last_name"), result.getString("phone"), result.getDate("user_created_at"));
+                result.close();
+                statement.close();
+                return user;
+            }
+        } catch (SQLException e) {
+            return null;
+        }
+    }
+
     public static List<User> users(Connection db, Application app) {
     	try {
 	        var statement = db.prepareStatement(String.format(
@@ -138,9 +200,7 @@ public class User {
     	} catch(Exception e) { return null;}
     }
     
-    public List<Role> roles() {
-        return null;
-    }
+
     
     public boolean isSuperMan() {
         try {

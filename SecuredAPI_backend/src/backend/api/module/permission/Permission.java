@@ -22,7 +22,9 @@ public record Permission() implements Library {
 	@Override
 	public List<Action> actions() {
 		return List.of(
-			new User()
+			new User(),
+			new Role(),
+			new RoleAssign()
 		);		
 		
 	}
