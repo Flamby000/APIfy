@@ -6,8 +6,7 @@ import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
 import backend.api.interfaces.Application;
 import backend.api.interfaces.Parameter;
-
-
+import backend.api.permission.Role;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -35,7 +34,7 @@ public record SetupDB() implements Action {
 	public boolean isGuestAction() { return true; }
 	
 	@Override
-	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id) throws IOException {
+	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method) throws IOException {
 		
 		//if(RequestData.requireId(response, id)) return;
 		
@@ -45,12 +44,12 @@ public record SetupDB() implements Action {
 			var statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %smodule ("
 				+ "module_id VARCHAR(255) PRIMARY KEY NOT NULL, "
-				+ "description VARCHAR(255) NOT NULL, "
-				+ "version VARCHAR(10), "
-				+ "author VARCHAR(255), "
-				+ "author_url VARCHAR(255), "
-				+ "installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-				+ "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+				+ "module_description VARCHAR(255) NOT NULL, "
+				+ "module_version VARCHAR(10), "
+				+ "module_author VARCHAR(255), "
+				+ "module_author_url VARCHAR(255), "
+				+ "module_installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+				+ "module_updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
 				+ ");", app.prefix())
 			);
 			statement.executeUpdate();
@@ -59,14 +58,15 @@ public record SetupDB() implements Action {
 			// Table library
 			statement = db.prepareStatement(String.format(
 					"CREATE TABLE IF NOT EXISTS %slibrary ("
-				  + "library_id VARCHAR(255) PRIMARY KEY NOT NULL, "
+				  + "library_id VARCHAR(255) NOT NULL, "
 				  + "module_id VARCHAR(255) NOT NULL REFERENCES module(module_id) ON DELETE CASCADE, "
-				  + "description VARCHAR(255) NOT NULL, "
-				  + "version VARCHAR(10), "
-				  + "author VARCHAR(255), "
-				  + "author_url VARCHAR(255), "
-				  + "installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-				  + "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+				  + "library_description VARCHAR(255) NOT NULL, "
+				  + "library_version VARCHAR(10), "
+				  + "library_author VARCHAR(255), "
+				  + "library_author_url VARCHAR(255), "
+				  + "library_installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+				  + "library_updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+				  + "PRIMARY KEY (module_id, library_id)"
 				  + ");", app.prefix())
 				  );
 			statement.executeUpdate();
@@ -75,12 +75,13 @@ public record SetupDB() implements Action {
 			// table action
 			statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %saction ("
-			  + "action_id VARCHAR(255) PRIMARY KEY NOT NULL, "
+			  + "action_id VARCHAR(255) NOT NULL, "
 			  + "library_id VARCHAR(255) NOT NULL REFERENCES library(library_id) ON DELETE CASCADE, "
-			  + "description VARCHAR(255) NOT NULL, "
+			  + "action_description VARCHAR(255) NOT NULL, "
 			  + "is_guest_action BOOLEAN NOT NULL, "
-			  + "installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-			  + "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+			  + "action_installed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+			  + "action_updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+			  + "PRIMARY KEY (action_id, library_id)"
 			  + ");", app.prefix())
 			  );
 			statement.executeUpdate();
@@ -97,7 +98,7 @@ public record SetupDB() implements Action {
 			  + "first_name VARCHAR(255), "
 			  + "last_name VARCHAR(255), "
 			  + "phone VARCHAR(255), "
-			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
+			  + "user_created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
 			  + ");", app.prefix())
 			  );
 			statement.executeUpdate();
@@ -140,9 +141,9 @@ public record SetupDB() implements Action {
 			statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %srole ("
 			  + "role_id INT(10) PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-			  + "name VARCHAR(255) NOT NULL UNIQUE,"
-			  + "description VARCHAR(255) NOT NULL, "
-			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
+			  + "role_name VARCHAR(255) NOT NULL UNIQUE,"
+			  + "role_description VARCHAR(255) NOT NULL, "
+			  + "role_created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
 			  + ");", app.prefix())
 			  );
 			statement.executeUpdate();
@@ -165,14 +166,14 @@ public record SetupDB() implements Action {
 	
 				// insert Superman role
 				statement = db.prepareStatement(String.format(
-					"INSERT INTO %srole (name, description) VALUES ('%s', 'The superman role with all rights');", app.prefix(), Application.SUPERMAN_ROLE)
+					"INSERT INTO %srole (role_name, role_description) VALUES ('%s', 'The superman role with all rights');", app.prefix(), Role.SUPERMAN_ROLE)
 				  );
 				statement.executeUpdate();
 				statement.close();
 
 				// get Superman role id
 				statement = db.prepareStatement(String.format(
-					"SELECT role_id FROM %srole WHERE name = '%s';", app.prefix(), Application.SUPERMAN_ROLE)
+					"SELECT role_id FROM %srole WHERE role_name = '%s';", app.prefix(), Role.SUPERMAN_ROLE)
 				  );
 				var result = statement.executeQuery();
 				result.next();
@@ -214,7 +215,7 @@ public record SetupDB() implements Action {
 				"CREATE TABLE IF NOT EXISTS %ssession ("
 			  + "session_id VARCHAR(255) PRIMARY KEY NOT NULL, "
 			  + "user_id VARCHAR(255) REFERENCES user(user_id) ON DELETE CASCADE, "
-			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
+			  + "session_created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
 			  + ");", app.prefix())
 			  );
 			statement.executeUpdate();
@@ -231,7 +232,7 @@ public record SetupDB() implements Action {
 			  + "method VARCHAR(30) NOT NULL, "
 			  + "in_parameters VARCHAR(2000) DEFAULT NULL, "
 			  + "out_parameters VARCHAR(2000), "
-			  + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
+			  + "request_created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
 			  + ");", app.prefix())
 			  );
 			statement.executeUpdate();
@@ -241,7 +242,6 @@ public record SetupDB() implements Action {
 		} catch (SQLException e) {
 			e.printStackTrace();
 			res.err("db_error", e.getMessage());
-
 			res.send(500);
 			return;
 		}
@@ -250,9 +250,27 @@ public record SetupDB() implements Action {
         	  
         	  
 		res.addString("message", "The database was correctly set up");
-		res.send(200);
+		res.send(201);
 	}
 
+
+	public static boolean isDBSetUp(Connection db, Application app) {
+
+		try {
+			var statement = db.prepareStatement("SHOW TABLES;");
+			var result = statement.executeQuery();
+			while(result.next()) {
+				if(result.getString(1).equals(String.format("%suser_role", app.prefix()))) return true;
+			}
+			result.close();
+			statement.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+		return false;
+
+	}
 
 }
 

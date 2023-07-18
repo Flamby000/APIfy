@@ -13,7 +13,6 @@ public class Application {
 	private final ConnectionPool connectionPool;
 	
 	// constante DEBUG ON
-	public static final String SUPERMAN_ROLE = "Superman";
 	
 	
 	
@@ -46,10 +45,7 @@ public class Application {
 		}
 	}
 	
-	public boolean isDBSetup() {
-		return true;
-	}
-	
+
 	
 	public PreparedStatement createLogStatement(Connection db) {
 		PreparedStatement logStatement = null;

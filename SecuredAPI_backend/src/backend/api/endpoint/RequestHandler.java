@@ -2,11 +2,15 @@ package backend.api.endpoint;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
+import java.util.List;
 import java.util.Objects;
 
 import com.sun.net.httpserver.HttpHandler;
 
 import backend.api.interfaces.Application;
+import backend.api.interfaces.Method;
+import backend.api.interfaces.Parameter;
+import backend.api.module.setup.SetupDB;
 import backend.api.permission.User;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -23,15 +27,23 @@ public record RequestHandler(Application app) implements HttpHandler {
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
 
+		// TODO : manage timeout (504 Gateway Timeout)
+
+
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
 
-		
-		// TODO : manage timeout (504 Gateway Timeout)
-		
-		// token
 
-		// Set CORS headers
 		allowCORS(exchange);
+
+
+		
+
+
+
+
+
+		
+
 		var logDB = app.db();
 		PreparedStatement logStatement = app.createLogStatement(logDB);
 
@@ -41,7 +53,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		try {logStatement.setString(5, exchange.getRequestMethod());} catch (Exception e) {}
 
-		
+
 		
 		if (!request.actionName().equals("SetupDB")) {
 
@@ -50,9 +62,9 @@ public record RequestHandler(Application app) implements HttpHandler {
 			// handled errors with code 500 with try/catch
 
 			// Check if database is setup
-			if (!app.isDBSetup()) {
+			if (!SetupDB.isDBSetUp(logDB, app)) {
 				response.appendError("db_not_setup", "The database is not set up");
-				response.send(501);
+				response.send(503);
 				return;
 			}
 
@@ -85,15 +97,29 @@ public record RequestHandler(Application app) implements HttpHandler {
 		}
 
 		// Check the validity of the method
-		if (!exchange.getRequestMethod().equals(action.method())) {
-			response.appendError("method_not_allowed", "The method \"" + exchange.getRequestMethod() + "\" is not allowed for the action " + action.name() + ". Try the method " + action.method());
+		var requestMethod = exchange.getRequestMethod();
+		if (!action.methods().contains(requestMethod)) {
+			response.appendError("method_not_allowed", "The method \"" + exchange.getRequestMethod() + "\" is not allowed for the action " + action.name() + ". Try the method " + action.methods());
 			response.send(405);
 			return;
 		}
 
+		
 		// Check action parameters on instance
-		var params = request.getParameters(action.parameters(), response);
-		if (params == null) return;
+		var expectedParameters = action.parameters();
+		List<Parameter<?>> params = List.of();
+		
+		if(!Method.needParameters(requestMethod)) {
+			if(expectedParameters.size() > 0) {
+				response.appendError("no_parameters_expected", String.format("The method %s expect no parameters", action.name()));
+				response.send(400);
+				return;
+			}
+		} else {
+			params = request.getParameters(expectedParameters, response);
+			if (params == null) return;
+		}
+		
 		User user = null;
 
 		if (!request.actionName().equals("SetupDB")) {
@@ -102,27 +128,29 @@ public record RequestHandler(Application app) implements HttpHandler {
 				try {
 					user = new User(logDB, app, request.token());
 				} catch(Exception e) {
-					response.appendError("guest_not_allowed", String.format("The action %s is not allowed for unauthenticated users", action.name()));
+					response.appendError("guest_not_allowed", String.format("The action %s is not allowed for unauthenticated users  %s", action.name(), e.getMessage()));
 					response.send(401);
 					return;
 				}
 				
-				System.out.println(user);
+				// Check user permission
+				var superMan = user.isSuperMan();
+				var canPerform = user.canPerform(action);
+				if(!canPerform && !superMan) {
+					response.appendError("permission_denied", String.format("You don't have the permission to perform %s action", action.name()));
+					response.send(403);
+					return;
+				}
+		
+				if(superMan && !canPerform) response.warn("superman_abuse", "You made this action because you are superman");
 				
-				
-				
-				// Check permissions (rights on DB)
-				// TODO
-
-				// TODO Check token
-
 			}
 		}
 
 		// Execute the action
 		try {
 			var db = app.db();
-			action.execute(app, response, params, db, request.id());
+			action.execute(app, response, params, db, request.id(), requestMethod);
 			app.close(db);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -144,11 +172,26 @@ public record RequestHandler(Application app) implements HttpHandler {
 	 * @param exchange to allow CORS
 	 */
 	public static void allowCORS(HttpExchange exchange) {
-		var headers = exchange.getResponseHeaders();
-		headers.add("Access-Control-Allow-Origin", "*"); // Allow requests from any origin
-		//System.out.println(exchange.getRequestMethod().toString());
-		headers.add("Access-Control-Allow-Methods", exchange.getRequestMethod().toString()); // Allow only POST requests
-		headers.add("Access-Control-Allow-Headers", "Content-Type"); // Allow Content-Type header
+		// allow every requests
+		exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+		exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "*");
+		exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "*");
+
+		// allow preflight
+		if (exchange.getRequestMethod().equals("OPTIONS")) {
+			exchange.getResponseHeaders().add("Access-Control-Max-Age", "1728000");
+			exchange.getResponseHeaders().add("Content-Type", "text/plain charset=UTF-8");
+			exchange.getResponseHeaders().add("Content-Length", "0");
+			exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "*");
+			try {
+				exchange.sendResponseHeaders(204, -1);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		
+	
 	}
 
 }

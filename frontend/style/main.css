@@ -1,0 +1,129 @@
+* {
+    box-sizing: border-box;
+}
+
+html, main, body {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: 'Almarai', sans-serif;
+
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.row::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+[class*="col-"] {
+    float: left;
+    /* padding: 15px; */
+    width: 100%;
+}
+
+
+.hide {
+    display: none !important;
+}
+
+/* Columns */
+.col-1 {width: 8.33%;}
+.col-2 {width: 16.66%;}
+.col-3 {width: 25%;}
+.col-4 {width: 33.33%;}
+.col-5 {width: 41.66%;}
+.col-6 {width: 50%;}
+.col-7 {width: 58.33%;}
+.col-8 {width: 66.66%;}
+.col-9 {width: 75%;}
+.col-10 {width: 83.33%;}
+.col-11 {width: 91.66%;}
+.col-12 {width: 100%;}
+
+/* Rows */
+.row-1 {left: 0%; top: 0%;}
+.row-2 {left: 0%; top: 8.33%;}
+.row-3 {left: 0%; top: 16.66%;}
+
+
+
+/* Categories navigation */
+#categories {
+    background-color :#154c79;
+    color:white;
+    height: 100%;
+}
+#categories li {
+    display: flex;
+    align-items: center;
+    padding-left: 1vw;
+    font-size: 1vw;
+}
+
+#categories li:hover {
+    background-color: #76b5c5;
+    transition-duration: 100ms;
+    cursor: pointer;
+    padding-left: 2vw;
+}
+
+#categories .selected {
+    background-color: #76b5c5;
+    padding-left: 2vw;
+}
+
+/* Category content */
+.category-title {
+    font-size: 2vw;
+    font-weight: bold;
+    padding: 1vw;
+    color: #154c79;
+    margin-top:0;
+    text-align: center;
+}
+
+#category-content {
+    margin-left: 19vw;
+    margin-right: 3vw;
+}
+
+/* list of Navigation history on the top in one line*/
+#nav-history li {
+    /* Align elements */
+    display: inline-block;
+    vertical-align: middle;    
+}
+
+/* Popup */
+
+
+/* Sortable arrays */
+.sort-button {
+    cursor : pointer;
+}
+
+.sortable td{
+    /* padding-left:2vw;
+    padding-right:2vw; */
+    padding:0px;
+    /* text-align: center; */
+
+}
+
+/* event sortable tr dark gray background */
+.sortable tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.sortable {
+    width: 100%;
+}

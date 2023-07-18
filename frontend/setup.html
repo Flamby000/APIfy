@@ -2,39 +2,291 @@
 <html>
 <head>
     <title>Setup</title>
-    <!-- <link rel="stylesheet" href="css/style.css"> -->
+    <link rel="stylesheet" href="style/main.css"> 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="js/api.js"></script>
-    
+    <meta charset="utf-8">
+
+
 </head>
 <body>
+    <main>
+        <div id="content">
+
+
+            <div id="config-db" class="hide">
+                <h1>Setup Database</h1>
+                <p>The database is not configured</p>
+                <form id="form-db">
+                    <!-- admin main, pass, firstname and lastname -->
+                    <label for="admin_mail">Admin mail</label>
+                    <input type="email" name="admin_mail" id="admin_mail" required>
+
+                    <label for="admin_password">Admin password</label>
+                    <input type="password" name="admin_password" id="admin_password" required>
+
+                    <label for="admin_firstname">Admin firstname</label>
+                    <input type="text" name="admin_firstname" id="admin_firstname" required>
+
+                    <label for="admin_lastname">Admin lastname</label>
+                    <input type="text" name="admin_lastname" id="admin_lastname" required>
+                    
+                    <input type="submit" onclick="setupDBForm()" value="Valider">
+                </form>
+            </div>
+
+
+
+            <!-- Categories on left side of the screen -->
+            <div id="categories" class="col-2 hide">
+                <ul>
+                    <li class="row"><h3>Users</h3></li>
+                    <li class="row"><h3>Permissions</h3> </li>
+                    <li class="row"><h3>Logs</h3></li>
+                    <li class="row"><h3>API Rest</h3></li>
+                    <li class="row"><h3>Statistiques</h3> </li>
+                </ul>
+            </div>
+
+            <!-- Navigation history -->
+            <div id="nav-history" class="hide">
+                <a href="#">Home</a> > <a href="#">Users</a> > <a href="#">Create</a>
+            </div>
+            
+
+            <div id="category-content" class="hide"></div>
+
+
+            <div id="popup" class="hide"></div>
+
+        </div>
+    </main>
 
     <script>
+    let category_content;
+
     window.onload = async function() {
-
-
-
-        // let response = await request("Core", "Setup", "SetupDB", 
-        //     id = false,
-        //     method = "POST",
-        //     {
-        //     "admin_mail" : "maxouducoudre@gmail.com",
-        //     "admin_password" : "1234",
-        //     "admin_firstname" : "Max",
-        //     "admin_lastname" : "Ducoudré"
-        //     }
-        // );
-        // console.log(response);
-
-
-        let response = await request(
-            "Core", "Setup", "UpdateModule",
-            id = "Core",
-            method = "POST" // PATCH
-        );
-
-        console.log(response);
+        category_content = document.getElementById("category-content");
+        checkDBSetup();
+        /* Categories click */
+        let categories = document.getElementById("categories").getElementsByTagName("li");
+        Array.from(categories).forEach(function(category) {
+            category.addEventListener("click", function() {
+                setCategory(category);
+            });
+        });
     }
+
+    async function checkDBSetup() {
+        let response = false;
+        response = await request("Core", "Setup", "isSetup", id = false, method = "GET");
+        if(getError(response, "db_not_setup")) {
+            document.getElementById("config-db").classList.remove("hide");
+        } else {
+            document.getElementById("categories").classList.remove("hide");
+            document.getElementById("category-content").classList.remove("hide");
+            document.getElementById("nav-history").classList.remove("hide");
+            document.getElementById("popup").classList.remove("hide");
+        }
+    }
+
+    async function setCategory(category) {
+        category_content.innerHTML = "";
+        /* Remove selected class from all categories */
+        let categories = document.getElementById("categories").getElementsByTagName("li");
+        Array.from(categories).forEach(function(category) {
+            category.classList.remove("selected");
+        });
+        /* Add selected class to clicked category */
+        category.classList.add("selected");
+
+        let category_title = document.createElement("h2");
+        category_title.classList.add("category-title");
+        category_title.innerText = category.innerText;
+        category_content.appendChild(category_title);
+
+        if(category.innerText == "Users") {
+            category_content.appendChild(await createUserCategory());
+        }
+
+    } 
+
+
+    async function createUserCategory() {
+        let category_user = document.createElement("div");
+
+        let response = await request("Core", "Permission", "User", id = false, method = "GET");
+        category_user.appendChild(createSubPart("Users list"));
+        
+        category_user.appendChild(createTable(response.data.users,
+            {    // Set columns name and order
+                id : "ID",
+                email :"E-mail",
+                username : "Login",
+                firstName : "First name",
+                lastName : "Last name",
+                creationDate : "Subscription"
+            },
+            {   
+                delete : deleteUser
+            }
+        ));
+
+
+        return category_user;
+    }
+
+
+
+
+
+    function createTable(data, columns, actions) {
+        let table = document.createElement("table");
+        table.classList.add("sortable");
+        table.classList.add("col-10");
+
+        let thead = document.createElement("thead");
+        let tr = document.createElement("tr");
+
+        for(let column in columns) {
+            let th = document.createElement("th");
+            th.innerText = columns[column];
+            
+            // add sort button on columns
+            let sort_button = document.createElement("span");
+            sort_button.classList.add("sort-button");
+            sort_button.innerText = "▲";
+            sort_button.addEventListener("click", function() {
+                sortTable(table, column, sort_button.innerText == "▲" ? "desc" : "asc");
+                sort_button.innerText = sort_button.innerText == "▲" ? "▼" : "▲";
+
+            });
+            th.appendChild(sort_button);
+            tr.appendChild(th);
+        }
+
+        // add actions column
+        let th = document.createElement("th");
+        th.innerText = "Actions";
+        tr.appendChild(th);
+
+
+        thead.appendChild(tr);
+        table.appendChild(thead);
+        let renamed_data = [];
+        for(let i = 0; i < data.length; i++) {
+            renamed_data[i] = {};
+            for(let column in columns) {
+                renamed_data[i][column] = data[i][column];
+            }
+        }
+
+        let tbody = document.createElement("tbody");
+        for(let i = 0; i < renamed_data.length; i++) {
+            let tr = document.createElement("tr");
+            for(let column in renamed_data[i]) {
+                let td = document.createElement("td");
+                td.classList.add(column);
+                td.innerText = renamed_data[i][column];
+                tr.appendChild(td);
+                
+            }
+
+            // add actions buttons
+            let td = document.createElement("td");
+            for(let action in actions) {
+                let button = document.createElement("button");
+                button.innerText = action;
+                button.addEventListener("click", function() {
+                    actions[action](renamed_data[i].id);
+                });
+                td.appendChild(button);
+            }
+            tr.appendChild(td);
+
+            tbody.appendChild(tr);
+        }
+
+
+
+        table.appendChild(tbody);
+        return table;
+    }
+
+
+    async function deleteUser(id) {
+
+        let response = await request("Core", "Permission", "User", id, "DELETE");
+        console.log(response);
+
+    }
+
+    function sortTable(table, column, order) {
+        let tbody = table.getElementsByTagName("tbody")[0];
+        let rows = tbody.getElementsByTagName("tr");
+        let rows_array = Array.from(rows);
+        rows_array.sort(function(a, b) {
+            let a_value = a.getElementsByClassName(column)[0].innerText;
+            let b_value = b.getElementsByClassName(column)[0].innerText;
+            
+            
+            if(order == "asc") {
+                if(a_value < b_value) return -1;
+                if(a_value > b_value) return 1;
+                return 0;
+            } else {
+                if(a_value > b_value) return -1;
+                if(a_value < b_value) return 1;
+                return 0;
+            }
+        });
+        tbody.innerHTML = "";
+        rows_array.forEach(function(row) {
+            tbody.appendChild(row);
+        });
+    }
+
+
+    function createSubPart(title) {
+        let subpart = document.createElement("div");
+
+        let subpart_title = document.createElement("h3");
+        subpart_title.classList.add("subpart-title");
+        subpart_title.innerText = title;
+        subpart.appendChild(subpart_title);
+
+
+        subpart.appendChild(document.createElement("hr"));
+        return subpart;
+    }
+
+
+
+
+
+
+
+
+    async function setupDBForm() {
+        let form = document.getElementById("form-db");
+        form.addEventListener("submit", function(e) {e.preventDefault();});
+        let admin_mail = document.getElementById("admin_mail").value;
+        let admin_password = document.getElementById("admin_password").value;
+        let admin_firstname = document.getElementById("admin_firstname").value;
+        let admin_lastname = document.getElementById("admin_lastname").value;
+
+        let response = await request("Core", "Setup", "SetupDB", false, "POST",
+            {
+                "admin_mail" : admin_mail,
+                "admin_password" : admin_password,
+                "admin_firstname" : admin_firstname,
+                "admin_lastname" : admin_lastname
+            }
+        );
+    }
+
+
+    
     </script>
 </body>
 </html>

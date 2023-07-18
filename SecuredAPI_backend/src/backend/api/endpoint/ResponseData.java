@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -76,11 +77,11 @@ public class ResponseData {
 	}
 
 	public void addArray(String name, List<?> value) {
-		appendResult(new Parameter<>(List.class, name, value));
+		appendResult(new Parameter<>(JSONArray.class, name, new JSONArray(value)));
 	}
 
 	public void addMap(String name, Map<?, ?> value) {
-		appendResult(new Parameter<>(Map.class, name, value));
+		//appendResult(new Parameter<>(JSONObject.class, name, new JSONObject(value)));
 	}
 	
 	
@@ -96,17 +97,21 @@ public class ResponseData {
 		        .put("description", error.getValue()))
 		    .collect(Collectors.toList()));
 
-		res.put("data", result.stream()
-			.map(parameter -> new JSONObject()
-				.put("name", parameter.name())
-				.put("value", parameter.stringifyValue()))
-			.collect(Collectors.toList()));
 
 		res.put("warnings", warnings.entrySet().stream()
 		    .map(warning -> new JSONObject()
 		        .put("warning", warning.getKey())
 		        .put("description", warning.getValue()))
 		    .collect(Collectors.toList()));
+		
+		
+		
+		/* Data field with all result (as object and not as a list */
+		var data = new JSONObject();
+		for(var param : result) {
+			data.put(param.name(), param.value());
+		}
+		res.put("data", data);
 		
 		
 		// Send response to client
@@ -122,16 +127,13 @@ public class ResponseData {
 			exchange.sendResponseHeaders(code, response.getBytes().length);
 
 			exchange.getResponseBody().write(response.getBytes());
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO : END APP
-		}
+		} catch (IOException e) {}
         exchange.close();
         
 		try {
 			statement.executeUpdate();
 			statement.close();
-		} catch (SQLException e) {e.printStackTrace();}
+		} catch (SQLException e) {}
 		
 		app.close(this.db);
         over = true;

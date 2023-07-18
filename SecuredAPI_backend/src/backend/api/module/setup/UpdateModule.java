@@ -9,6 +9,7 @@ import backend.api.endpoint.RequestData;
 import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
 import backend.api.interfaces.Application;
+import backend.api.interfaces.Method;
 import backend.api.interfaces.Parameter;
 
 public record UpdateModule() implements Action {
@@ -19,14 +20,14 @@ public record UpdateModule() implements Action {
 
 	
 	@Override 
-	public String method() { return "POST"; } // TODO : Use PATCH instead of POST
+	public List<String> methods() { return List.of(Method.POST); } 
 	
 	@Override
 	public boolean isGuestAction() { return false; }
 
 	
 	@Override
-	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id)
+	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method)
 			throws IOException {
 		RequestData.requireId(res, id);
 		if(res.isClosed()) return;
@@ -50,7 +51,7 @@ public record UpdateModule() implements Action {
 				statement.close();
 
 				// Insert the module
-				statement = db.prepareStatement(String.format("INSERT INTO %smodule (module_id, description, version, author, author_url) VALUES (?, ?, ?, ?, ?);", app.prefix()));
+				statement = db.prepareStatement(String.format("INSERT INTO %smodule (module_id, module_description, module_version, module_author, module_author_url) VALUES (?, ?, ?, ?, ?);", app.prefix()));
 				statement.setString(1, id);
 				statement.setString(2, module.description());
 				statement.setString(3, module.version());
@@ -61,7 +62,7 @@ public record UpdateModule() implements Action {
 				statement.close();
 
 				// Update the module
-				statement = db.prepareStatement(String.format("UPDATE %smodule SET description = ?, version = ?, author = ?, author_url = ?, updated_at = ? WHERE module_id = ?;", app.prefix()));
+				statement = db.prepareStatement(String.format("UPDATE %smodule SET module_description = ?, module_version = ?, module_author = ?, module_author_url = ?, module_updated_at = ? WHERE module_id = ?;", app.prefix()));
 				statement.setString(1, module.description());
 				statement.setString(2, module.version());
 				statement.setString(3, module.author());
@@ -85,7 +86,7 @@ public record UpdateModule() implements Action {
 					// if there is no library, insert
 					if(!libResult.next()) {
 						libStatement.close();
-						libStatement = db.prepareStatement(String.format("INSERT INTO %slibrary (library_id, module_id, description, version, author, author_url) VALUES (?, ?, ?, ?, ?, ?);", app.prefix()));
+						libStatement = db.prepareStatement(String.format("INSERT INTO %slibrary (library_id, module_id, library_description, library_version, library_author, library_author_url) VALUES (?, ?, ?, ?, ?, ?);", app.prefix()));
 						libStatement.setString(1, library.name());
 						libStatement.setString(2, id);
 						libStatement.setString(3, library.description());
@@ -95,7 +96,7 @@ public record UpdateModule() implements Action {
 						libStatement.executeUpdate();
 					} else {
 						libStatement.close();
-						libStatement = db.prepareStatement(String.format("UPDATE %slibrary SET description = ?, version = ?, author = ?, author_url = ?, updated_at = ? WHERE library_id = ?;", app.prefix()));
+						libStatement = db.prepareStatement(String.format("UPDATE %slibrary SET library_description = ?, library_version = ?, library_author = ?, library_author_url = ?, library_updated_at = ? WHERE library_id = ?;", app.prefix()));
 						libStatement.setString(1, library.description());
 						libStatement.setString(2, library.version());
 						libStatement.setString(3, library.author());
@@ -120,7 +121,7 @@ public record UpdateModule() implements Action {
 							// if there is no action, insert
 							if(!actionResult.next()) {
 								actionStatement.close();
-								actionStatement = db.prepareStatement(String.format("INSERT INTO %saction (action_id, library_id, description, is_guest_action) VALUES (?, ?, ?, ?);", app.prefix()));
+								actionStatement = db.prepareStatement(String.format("INSERT INTO %saction (action_id, library_id, action_description, is_guest_action) VALUES (?, ?, ?, ?);", app.prefix()));
 								actionStatement.setString(1, action.name());
 								actionStatement.setString(2, library.name());
 								actionStatement.setString(3, action.description());
@@ -128,13 +129,12 @@ public record UpdateModule() implements Action {
 								actionStatement.executeUpdate();
 							} else {
 								actionStatement.close();
-								actionStatement = db.prepareStatement(String.format("UPDATE %saction SET description = ?, is_guest_action = ?, updated_at = ? WHERE action_id = ?;", app.prefix()));
+								actionStatement = db.prepareStatement(String.format("UPDATE %saction SET action_description = ?, is_guest_action = ?, action_updated_at = ? WHERE action_id = ?;", app.prefix()));
 								actionStatement.setString(1, action.description());
 								actionStatement.setBoolean(2, action.isGuestAction());
 								actionStatement.setTimestamp(3, new java.sql.Timestamp(System.currentTimeMillis()));
 								actionStatement.setString(4, action.name());
 								actionStatement.executeUpdate();
-
 							} 
 							actionStatement.close();
 						} catch (SQLException e) {

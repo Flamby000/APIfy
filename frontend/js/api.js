@@ -13,22 +13,46 @@ function setToken(token, expiration) {
 
 async function request(module, library, action, id = false, method = "POST", params = false)
 {
-    //console.log("Requesting API: " + module + "/" + library + "/" + action);
 
     if(params != false) params = JSON.stringify(params);
-
-    // Create cookie 'token' if it doesn't exist with 1 day expiration
     if(token() == undefined) setToken(Math.random().toString(36).substring(7), 1);
+    let response = false;
+    try {
+        let result = $.ajax(`http://localhost:4080/api/${token()}/${module}/${library}/${action}${id ? '/' + id : ''}`, 
+        {
+            type: method,
+            data : params
+        });
+        await result;
 
-    console.log(method)
-    let result = await $.ajax(`http://localhost:4080/api/${token()}/${module}/${library}/${action}${id ? '/' + id : ''}`, 
+        response = JSON.parse(result.responseText);
+        response.status = result.status;
+    } catch (error) {
+        response = JSON.parse(error.responseText);
+        response.status = error.status;
+    }
+    
+    return response;
+}
+
+
+async function fullRequest(module, library, action, id = false, method = "POST", params = false)
+{
+    
+    if(params != false) params = JSON.stringify(params);
+    if(token() == undefined) setToken(Math.random().toString(36).substring(7), 1);
+    let result = $.ajax(`http://localhost:4080/api/${token()}/${module}/${library}/${action}${id ? '/' + id : ''}`, 
     {
         type: method,
         data : params
     });
+    await result;
+    return result;
+}
 
-    // console.log(result);
-
-    try { result = JSON.parse(result); } catch (e) {}
-	return result;
+function getError(response, errorName) {
+    if(!response.success) {
+        return response.errors.find(error => error.error == errorName);
+    }
+    return false;
 }
