@@ -11,7 +11,8 @@ import backend.api.module.Core;
 public class Application {
 	private final List<Module> modules;
 	private final ConnectionPool connectionPool;
-	
+	public final static String CONFIG_FILE = "config.json";
+
 	// constante DEBUG ON
 	
 	

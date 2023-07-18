@@ -3,5 +3,6 @@
 	"db_name":"SecuredAPI",
 	"db_user":"SecuredAPI",
 	"db_password":"SecuredAPI",
-	"table_prefix":"api_"
+	"table_prefix":"api_",
+	"api_port" : 4080
 }

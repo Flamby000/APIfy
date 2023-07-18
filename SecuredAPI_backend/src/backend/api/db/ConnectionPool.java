@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 
 import org.json.JSONObject;
 
+import backend.api.interfaces.Application;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -17,7 +18,6 @@ import java.util.Objects;
 
 public class ConnectionPool {
 	
-	private final static String DB_CONFIG = "db.json";
 	private final static int POOL_SIZE = 10;
 	private String prefix;
 	
@@ -29,7 +29,7 @@ public class ConnectionPool {
 	
 	public ConnectionPool() {
 		
-		try (BufferedReader reader = new BufferedReader(new FileReader(DB_CONFIG))) {
+		try (BufferedReader reader = new BufferedReader(new FileReader(Application.CONFIG_FILE))) {
             var jsonString = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) jsonString.append(line);
