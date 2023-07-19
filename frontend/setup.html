@@ -73,6 +73,7 @@
     let roles = [];
     let current_modal_id = false;
 
+
     window.onload = async function() {
         category_content = document.getElementById("category-content");
         modal = document.getElementById("modal");
@@ -91,10 +92,212 @@
     }
 
 
-    function openModal(title, content, id = false) {
-        
-        id ? current_modal_id = id : current_modal_id = false;
+    /** ROLE CATEGORY PART **/
+    async function createPermissionCategory() {
+        let category_permission = document.createElement("div");
 
+        let response = await request("Core", "Permission", "Role", id = false, method = "GET");
+        console.log(response);
+        category_permission.appendChild(createSubPart("Roles list"));
+        category_permission.appendChild(createTable(response.data.roles,
+            { 
+                id : "Role ID",
+                role_name : "Name",
+                role_description : "Description",
+                creationDate : "Creation date"
+            },
+            {   
+                Delete : deleteRole
+            },
+            {
+                id : roleDetails
+            },
+            false,
+            {
+                label : "Create",
+                needed_columns : ["role_name", "role_description"],
+                function : createRole
+            }
+
+        ));
+
+        return category_permission;
+    }
+
+    async function deleteRole(id, lineElement) {
+        let response = await request("Core", "Permission", "Role", id, "DELETE");
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function createRole(id, data) {
+        let response = await request("Core", "Permission", "Role", false, "POST", data);
+        if(!response.success) promptError(response);
+        return response.success ? response.data.role : false;
+    }
+    
+
+
+    /** USER CATEGORY PART **/
+    async function createUserCategory() {
+        let category_user = document.createElement("div");
+
+        let response = await request("Core", "Permission", "User", id = false, method = "GET");
+        category_user.appendChild(createSubPart("Users list"));
+        
+        category_user.appendChild(createTable(response.data.users,
+            { 
+                id : "User ID",
+                email :"E-mail",
+                username : "Login",
+                first_name : "First name",
+                last_name : "Last name",
+                creationDate : "Subscription"
+            },
+            {   
+                delete : deleteUser
+            },
+            {
+                id : userDetails
+            },
+            false
+        ));
+
+        return category_user;
+    }
+
+    async function deleteUser(id, lineElement) {
+        let response = await request("Core", "Permission", "User", id, "DELETE");
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    /** ROLE DETAILS PART **/
+    async function roleDetails(id) {
+        let response = await request("Core", "Permission", "role", id, "GET");
+        if(response.success) {
+            // TODO : add role details
+            console.log(response);
+        } else {
+            promptError(response);
+        }
+    }
+
+
+    /** USER DETAILS PART **/
+    async function userDetails(id) {
+        let response = await request("Core", "Permission", "User", id, "GET");
+        if(response.success) {
+
+            let user = response.data.user;
+            let user_details = document.createElement("div");
+
+            user_details.appendChild(createDataList(
+                user,
+                {
+                    first_name : "First name",
+                    last_name : "Last name",
+                    email : "E-mail",
+                    username : "Login",
+                    creationDate : "Subscription"
+                },
+                {
+                    first_name : editUser,
+                    last_name : editUser,
+                    email : editUser,
+                    username : editUser
+                }
+            ));
+            user_details.appendChild(document.createElement("hr"));
+            let user_roles = document.createElement("div");
+            user_roles.classList.add("user-roles");
+            user_roles.innerHTML = `<h3>Roles</h3>`;
+            user_roles.appendChild(createTable(response.data.roles,
+                {
+                    id : "Role ID",
+                    role_name : "Name",
+                    role_description : "Description",
+                    creationDate : "Creation date"
+                },
+                {   
+                    Unassign : removeRole
+                },
+                {
+                    id : roleDetails
+                },
+                {
+                    label : "Assign",
+                    function : addRole,
+                    selectLabelColumn : "role_name",
+                    options : roles
+                }
+            ));
+            user_details.appendChild(user_roles);
+            openModal(`${user.id} - ${user.first_name} ${user.last_name.toUpperCase()}`, user_details, user.id);
+        } else {
+            promptError(response);
+        }
+    }
+
+    async function editUser(field, value) {
+        let response = await request("Core", "Permission", "User", current_modal_id, "PATCH", 
+            { patch_fields : { [field] : value } }
+        );
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function removeRole(id, lineElement) {
+        let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
+            "role_id" : parseInt(id),
+            "user_id" : parseInt(current_modal_id)
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function addRole(id) {
+        let response = await request("Core", "Permission", "RoleAssign", false, "POST", {
+            "role_id" : parseInt(id),
+            "user_id" : parseInt(current_modal_id)
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+
+
+
+
+
+
+    function promptError(response) {
+        if(!response.success) return; 
+        let errors = "";
+        response.errors.forEach(function(error) {
+            errors += error.error + " : " + error.description + "\n";
+        });
+        response.warnings.forEach(function(warning) {
+            errors += warning.warning + " : " + warning.description + "\n";
+        });
+
+        alert(errors);
+    }
+
+    function createSubPart(title) {
+        let subpart = document.createElement("div");
+        let subpart_title = document.createElement("h3");
+        subpart_title.classList.add("subpart-title");
+        subpart_title.innerText = title;
+        subpart.appendChild(subpart_title);
+        subpart.appendChild(document.createElement("hr"));
+        return subpart;
+    }
+
+
+    
+    function openModal(title, content, id = false) {
+        id ? current_modal_id = id : current_modal_id = false;
         modal.classList.remove("hide");
         document.getElementById("modal-title").innerText = title;
         document.getElementById("modal-text").appendChild(content)
@@ -138,165 +341,10 @@
 
         if(category.innerText == "Users") {
             category_content.appendChild(await createUserCategory());
-        }
-
+        } else if(category.innerText == "Permissions") {
+            category_content.appendChild(await createPermissionCategory());
+        } 
     } 
-
-
-    async function createUserCategory() {
-        let category_user = document.createElement("div");
-
-        let response = await request("Core", "Permission", "User", id = false, method = "GET");
-        category_user.appendChild(createSubPart("Users list"));
-        
-        category_user.appendChild(createTable(response.data.users,
-            { 
-                id : "User ID",
-                email :"E-mail",
-                username : "Login",
-                firstName : "First name",
-                lastName : "Last name",
-                creationDate : "Subscription"
-            },
-            {   
-                delete : deleteUser
-            },
-            {
-                id : userDetails
-            }
-        ));
-
-        return category_user;
-    }
-
-
-    async function userDetails(id) {
-        let response = await request("Core", "Permission", "User", id, "GET");
-        if(response.success) {
-
-            let user = response.data.user;
-            let user_details = document.createElement("div");
-
-            // let user_data = document.createElement("div");
-            // user_data.classList.add("user-data");
-            // user_data.innerHTML =`
-            //     <p><b>First name</b> : ${user.firstName}</p>
-            //     <p><b>Last name</b> : ${user.lastName}</p>
-            //     <p><b>E-mail</b> : ${user.email}</p>
-            //     <p><b>Username</b> : ${user.username}</p>
-            //     <p><b>Creation date</b> : ${user.creationDate}</p>
-            // `;
-            // user_details.appendChild(user_data);
-            user_details.appendChild(createDataList(
-                user,
-                {
-                    firstName : "First name",
-                    lastName : "Last name",
-                    email : "E-mail",
-                    username : "Login",
-                    creationDate : "Subscription"
-                },
-                {
-                    firstName : editUser
-                    lastName : editUser,
-                    email : editUser,
-                    username : editUser,
-                }
-            ));
-
-            user_details.appendChild(document.createElement("hr"));
-
-            let user_roles = document.createElement("div");
-            user_roles.classList.add("user-roles");
-            user_roles.innerHTML = `<h3>Roles</h3>`;
-            user_roles.appendChild(createTable(response.data.roles,
-                {
-                    id : "Role ID",
-                    name : "Name",
-                    description : "Description",
-                    creationDate : "Creation date"
-                },
-                {   
-                    Unassign : removeRole
-                },
-                {
-                    id : roleDetails
-                },
-                {
-                    label : "Assign",
-                    function : addRole,
-                    selectLabelColumn : "name",
-                    options : roles
-                }
-            ));
-            user_details.appendChild(user_roles);
-
-            openModal(`${user.id} - ${user.firstName} ${user.lastName.toUpperCase()}`, user_details, user.id);
-        } else {
-            promptError(response);
-        }
-    }
-
-    async function editUser(field, value)
-
-    async function removeRole(id, lineElement) {
-        let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
-            "role_id" : parseInt(id),
-            "user_id" : parseInt(current_modal_id)
-        });
-        if(!response.success) promptError(response);
-        return response.success;
-    }
-
-    async function addRole(id) {
-        let response = await request("Core", "Permission", "RoleAssign", false, "POST", {
-            "role_id" : parseInt(id),
-            "user_id" : parseInt(current_modal_id)
-        });
-        if(!response.success) promptError(response);
-        return response.success;
-    }
-
-    async function roleDetails(id) {
-        let response = await request("Core", "Permission", "role", id, "GET");
-        if(response.success) {
-            // TODO : add role details
-            console.log(response);
-        } else {
-            promptError(response);
-        }
-    }
-
-    async function deleteUser(id, lineElement) {
-        let response = await request("Core", "Permission", "User", id, "DELETE");
-        if(!response.success) promptError(response);
-        return response.success;
-    }
-
-    function promptError(response) {
-        if(!response.success) return; 
-        let errors = "";
-        response.errors.forEach(function(error) {
-            errors += error.error + " : " + error.description + "\n";
-        });
-        response.warnings.forEach(function(warning) {
-            errors += warning.warning + " : " + warning.description + "\n";
-        });
-
-        alert(errors);
-    }
-
-    function createSubPart(title) {
-        let subpart = document.createElement("div");
-        let subpart_title = document.createElement("h3");
-        subpart_title.classList.add("subpart-title");
-        subpart_title.innerText = title;
-        subpart.appendChild(subpart_title);
-        subpart.appendChild(document.createElement("hr"));
-        return subpart;
-    }
-
-
 
 
     async function setupDBForm() {
@@ -338,17 +386,24 @@
             if(editableLines[label]) {
                 let edit_button = document.createElement("button");
                 edit_button.innerText = "Edit";
-                edit_button.addEventListener("click", function() {
+                edit_button.addEventListener("click", async function() {
                     if(edit_button.innerText == "Edit") {
                         edit_button.innerText = "Save";
                         // border of the editable element became balck
                         value_element.style.border = "1px solid black";
                         value_element.contentEditable = true;
+
                     } else {
                         edit_button.innerText = "Edit";
                         // border of the editable element became transparent
                         value_element.style.border = "1px solid transparent";
                         value_element.contentEditable = false;
+
+                        // send request to edit the element
+                        if(!await editableLines[label](label, value_element.innerText)) {
+                            value_element.innerText = data[label];
+                        }
+
                     }
                 });
                 line.appendChild(edit_button);
@@ -360,7 +415,7 @@
     }
 
 
-    function createTable(data, columns, delete_actions, references, create = false) {
+    function createTable(data, columns, delete_actions, references, addExisting = false, createNew = false) {
         let table = document.createElement("table");
         table.classList.add("sortable");
         table.classList.add("col-10");
@@ -442,7 +497,7 @@
         }
 
         // create element
-        if(create) {
+        if(addExisting) {
             let tr = document.createElement("tr");
             tr.classList.add("create-element");
             let select = document.createElement("select");
@@ -451,17 +506,17 @@
             option.disabled = true;
             option.selected = true;
             select.appendChild(option);
-            for(let option in create.options) {
+            for(let option in addExisting.options) {
                 let option_element = document.createElement("option");
-                option_element.innerText = create.options[option][create.selectLabelColumn];
-                option_element.value = create.options[option].id;
+                option_element.innerText = addExisting.options[option][addExisting.selectLabelColumn];
+                option_element.value = addExisting.options[option].id;
                 select.appendChild(option_element);
             }
 
             for(let column in columns) {
                 let td = document.createElement("td");
                 td.classList.add(column);
-                if(column == create.selectLabelColumn) {
+                if(column == addExisting.selectLabelColumn) {
                     td.appendChild(select);
                 }
                 tr.appendChild(td);
@@ -473,8 +528,8 @@
                 // Set all td of the line with the value of the selected role
                 let tds = tr.getElementsByTagName("td");
                 for(let i = 0; i < tds.length-1; i++) {
-                    if(tds[i].classList[0] != create.selectLabelColumn)
-                    tds[i].innerText = create.options[select.selectedIndex - 1][tds[i].classList[0]];
+                    if(tds[i].classList[0] != addExisting.selectLabelColumn)
+                    tds[i].innerText = addExisting.options[select.selectedIndex - 1][tds[i].classList[0]];
 
                     // reference click 
                     if(references[tds[i].classList[0]]) {
@@ -491,16 +546,16 @@
             // add create button
             let td = document.createElement("td");
             button.disabled = true;
-            button.innerText = create.label;
+            button.innerText = addExisting.label;
             button.addEventListener("click", async function() {
-                let creation_success = await create.function(select.value)
+                let creation_success = await addExisting.function(select.value)
                 if(creation_success) {
                     // add new line with the selected role
                     let new_tr = document.createElement("tr");
                     for(let column in columns) {
                         let td = document.createElement("td");
                         td.classList.add(column);
-                        td.innerText = create.options[select.selectedIndex - 1][td.classList[0]];
+                        td.innerText = addExisting.options[select.selectedIndex - 1][td.classList[0]];
 
                         if(references[column]) {
                             td.classList.add("reference");
@@ -530,6 +585,84 @@
                     tbody.insertBefore(new_tr, tbody.lastChild);
                     tbody.insertBefore(tbody.lastChild, tbody.lastChild.previousSibling);
                     
+                }
+            });
+            td.appendChild(button);
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        }
+
+        if(createNew) {
+            let tr = document.createElement("tr");
+            tr.classList.add("create-element");
+            for(let column in columns) {
+                let td = document.createElement("td");
+                td.classList.add(column);
+                if(createNew.needed_columns.includes(column)) {
+                    let input = document.createElement("input");
+                    input.type = "text";
+                    input.placeholder = column;
+                    td.appendChild(input);
+                }
+                tr.appendChild(td);
+            }
+
+            let button = document.createElement("button");
+            let td = document.createElement("td");
+            button.innerText = createNew.label;
+            button.addEventListener("click", async function() {
+                let data = {};
+                for(let column in columns) {
+                    if(createNew.needed_columns.includes(column)) {
+                        data[column] = tr.getElementsByClassName(column)[0].getElementsByTagName("input")[0].value;
+                    }
+                }
+                let creation_success = await createNew.function(false, data);
+                
+                if(creation_success) {
+                    let newData = creation_success; 
+                    // add new line with the selected role
+                    let new_tr = document.createElement("tr");
+                    for(let column in columns) {
+                        let td = document.createElement("td");
+                        td.classList.add(column);
+                        td.innerText = newData[column];
+
+                        if(references[column]) {
+                            td.classList.add("reference");
+                            td.addEventListener("click", function() {
+                                references[column](newData.id);
+                            });
+                        }
+
+                        new_tr.appendChild(td);
+                    }
+                    let td = document.createElement("td");
+                    for(let action in delete_actions) {
+                        let button = document.createElement("button");
+                        button.innerText = action;
+                        button.addEventListener("click", function() {
+                            if(delete_actions[action](newData.id)) {
+                                new_tr.remove();
+                            }
+                        });
+
+                       
+                        td.appendChild(button);
+                    }
+                    new_tr.appendChild(td);
+                    tbody.appendChild(new_tr);
+                    /* Exchange 2 last lines */
+                    tbody.insertBefore(new_tr, tbody.lastChild);
+                    tbody.insertBefore(tbody.lastChild, tbody.lastChild.previousSibling);
+
+                    // clear inputs
+                    for(let column in columns) {
+                        if(createNew.needed_columns.includes(column)) {
+                            tr.getElementsByClassName(column)[0].getElementsByTagName("input")[0].value = "";
+                        }
+                    }
+
                 }
             });
             td.appendChild(button);

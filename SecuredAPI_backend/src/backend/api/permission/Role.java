@@ -14,7 +14,9 @@ import backend.api.interfaces.Application;
 public class Role {
 	public static final String SUPERMAN_ROLE = "Superman";
 
+	@SuppressWarnings("unused")
 	private final Connection db;
+	@SuppressWarnings("unused")
 	private final Application app;
 
 	private final String name;
@@ -37,11 +39,37 @@ public class Role {
 
 	public Map<String, String> toMap() {
 		var map = new HashMap<String, String>();
-		map.put("name", name);
-		map.put("description", description);
+		map.put("role_name", name);
+		map.put("role_description", description);
 		map.put("creationDate", creationDate.toString());
 		map.put("id", String.valueOf(id));
 		return map;
+	}
+
+	public static Role create(Connection db, Application app, String description, String name) throws Exception {
+		try {
+			var statement = db.prepareStatement(String.format("INSERT INTO %srole (role_name, role_description) VALUES (?, ?);", app.prefix()));
+			statement.setString(1, name);
+			statement.setString(2, description);
+			statement.executeUpdate();
+			statement.close();
+			
+			// Get role ID from DB
+			statement = db.prepareStatement(String.format("SELECT role_id FROM %srole WHERE role_name = ?;", app.prefix()));
+			statement.setString(1, name);
+			var result = statement.executeQuery();
+			if(!result.next()) {
+				result.close();
+				statement.close();
+				throw new Exception("The role wasn't created");
+			}
+			var role_id = result.getInt("role_id");
+
+
+			return new Role(db, app, role_id, name, description, new Date(System.currentTimeMillis()));
+		} catch(Exception e) {
+			throw new Exception(e.getMessage());
+		}
 	}
 
 	public static List<Role> roles(Connection db, Application app) {

@@ -12,13 +12,16 @@ import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.sun.net.httpserver.HttpExchange;
 import org.json.JSONObject;
 
+import backend.api.interfaces.Action;
 import backend.api.interfaces.Application;
+import backend.api.interfaces.Method;
 import backend.api.interfaces.Parameter;
 
 
@@ -32,14 +35,13 @@ public class RequestData {
 	private String module;
 	private String id;
 	private String token;
-	
+	private JSONObject patchFields = null;
 	
 	
 	public RequestData(HttpExchange exchange, Application app, PreparedStatement statement, ResponseData response) throws IOException {
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
 		Objects.requireNonNull(response, "Response cannot be null");
 		Objects.requireNonNull(app, "Application cannot be null");
-		
 		
 		// Get parameters
 		var isr = new InputStreamReader(exchange.getRequestBody(), "UTF-8");
@@ -100,8 +102,6 @@ public class RequestData {
 			response.send(401); // Unauthorized
 			return;
 		}
-
-
 	}
 
 	
@@ -113,12 +113,18 @@ public class RequestData {
 	public String id() { return id;}
 	public String token() { return token;}
 	
+	public JSONObject patchFields() { return patchFields; }
+	
+	
 	@SuppressWarnings("unchecked")
-	public List<Parameter<?>> getParameters(List<Parameter<?>> expectedParameters, ResponseData response) throws IOException {
+	public List<Parameter<?>> getParameters(ResponseData response, String method, Action action) throws IOException {
 		var result = new ArrayList<Parameter<?>>();
+		var expectedParameters = action.parameters();
 
 		var json = params();
 		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
+		
+		
 		
 		// Check if the JSON is valid
 		if(json == null || json.isEmpty()) {
@@ -128,6 +134,27 @@ public class RequestData {
 		}
 		
 		var object = new JSONObject(json);
+		
+		
+		// extract from object the object with key "patch_fields"
+		if(method.equals(Method.PATCH)) {
+			if(object.has("patch_fields")) {
+				patchFields = object.getJSONObject("patch_fields");
+				object.remove("patch_fields");
+				// Check if one of the key of the patch_fields is not in the patchableFields of the action
+				var notPatchable = patchFields.keySet().stream().filter((key) -> !action.patchableFields().contains(key)).collect(Collectors.toList());
+				if(notPatchable.size() > 0) {
+					response.appendError("patch_fields_not_patchable", "The patch_fields object contains a key that is not patchable");
+					response.send(412);
+					return null;
+				}
+
+			} else {
+				response.appendError("patch_parameters_not_found", "The PATCH method need a patch_fields object");
+				response.send(412);
+				return null;
+			}
+		}
 		
 		var mustCount = expectedParameters.stream().filter((parameter) -> parameter.must()).count();
 		var nonMustCount =  expectedParameters.stream().filter((parameter) -> !parameter.must()).count();
@@ -159,16 +186,19 @@ public class RequestData {
 
 			// Check parameter type
 			if(object.has(parameter.name()) && (object.isNull(parameter.name()))) {
-				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" must be of type " + parameter.type());
+				response.appendError("bad_parameter_name", "The parameter \"" + parameter.name() + "\" must be of type " + parameter.type());
 				response.send(412);
 				return null;
 			}
 			
 			
 			// Check the type of the argument
-			if(object.has(parameter.name()) && (!parameter.type().equals(object.get(parameter.name()).getClass()))) {
-				
-				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +object.get(parameter.name()).getClass().getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
+			var requestType = object.get(parameter.name()).getClass();
+			if(requestType.equals(org.json.JSONArray.class)) requestType = List.class;
+			if(requestType.equals(org.json.JSONObject.class)) requestType = Map.class;
+			if(object.has(parameter.name()) && (!parameter.type().equals(requestType))) {
+			
+				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +requestType.getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
 				response.send(412);
 				return null;
 			}
@@ -176,7 +206,9 @@ public class RequestData {
 		}
 		
 		//  send 400 if there is parameters not expected 
+		//var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
 		var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
+
 		if(notExpected.size() > 0) {
 			response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
 			response.send(412);

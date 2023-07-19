@@ -103,6 +103,16 @@ public class User {
     public String phone() { return phone; }
     public Date creationDate() { return creationDate; }
 
+    
+    public static void updateField(Connection db, Application app, String id, String column, String value) throws SQLException {
+        var statement = db.prepareStatement(String.format(
+                "UPDATE %suser SET %s = ? WHERE user_id = ?;"
+                , app.prefix(), column));
+        statement.setString(1, value);
+        statement.setInt(2, Integer.parseInt(id));
+        statement.executeUpdate();
+        statement.close();
+    }
 
     public static boolean delete(Connection db, Application app, String id) {
         try {
@@ -124,8 +134,8 @@ public class User {
         map.put("username", username);
         //map.put("password", password);
         map.put("email", email);
-        map.put("firstName", firstName);
-        map.put("lastName", lastName);
+        map.put("first_name", firstName);
+        map.put("last_name", lastName);
         map.put("phone", phone);
         map.put("creationDate", creationDate.toString());
         return map;

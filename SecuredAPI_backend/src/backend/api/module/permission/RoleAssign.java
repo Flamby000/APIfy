@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.util.List;
 
+import org.json.JSONObject;
+
 import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
 import backend.api.interfaces.Application;
@@ -27,9 +29,8 @@ public record RoleAssign() implements Action {
 	}
 	
 	@Override
-	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id,
-			String method) throws IOException {
-		
+	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method,JSONObject patchFields) throws IOException {
+
 		var userId = (Integer) Parameter.find(params, "user_id").value();
 		var roleId = (Integer) Parameter.find(params, "role_id").value();
 		

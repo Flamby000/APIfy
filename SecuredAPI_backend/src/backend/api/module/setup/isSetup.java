@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.util.List;
 
+import org.json.JSONObject;
+
 import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
 import backend.api.interfaces.Application;
@@ -22,7 +24,7 @@ public record isSetup() implements Action {
 	public boolean isGuestAction() { return true; }
 	
 	@Override
-	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method) throws IOException {
+	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method,JSONObject patchFields) throws IOException {
 		
 		if(SetupDB.isDBSetUp(db, app)) {
 			res.addString("message", "The database is correctly set up");

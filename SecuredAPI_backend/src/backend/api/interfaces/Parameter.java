@@ -3,6 +3,8 @@ package backend.api.interfaces;
 import java.util.List;
 import java.util.Objects;
 
+import org.json.JSONObject;
+
 
 public class Parameter<T> {
 	private final String name;
@@ -22,6 +24,7 @@ public class Parameter<T> {
 		must = false;
 	}
 	
+
 	public Parameter(Class<T> type, String name, T value) {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(value);
@@ -47,6 +50,12 @@ public class Parameter<T> {
 		this.description = description;
 	}
 	
+	
+	public static JSONObject patchParams() {
+		return null;
+	}
+	
+	
 	static public Parameter<?> find(List<Parameter<?>> params, String name) {
 		return params.stream().filter((param) -> param.name().equals(name)).findFirst().orElse(null);
 	}
@@ -56,7 +65,7 @@ public class Parameter<T> {
 	public String description() { return description; }
 	public boolean must() { return must; }
 	@SuppressWarnings("rawtypes")
-	public Class type() { return type;}
+	public Class type() { return type; }
 	public T value() { return value; }
 	
 	public String stringifyValue() {

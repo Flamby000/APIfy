@@ -18,7 +18,7 @@ async function request(module, library, action, id = false, method = "POST", par
     if(token() == undefined) setToken(Math.random().toString(36).substring(7), 1);
     let response = false;
     try {
-        let result = $.ajax(`http://localhost:4090/api/${token()}/${module}/${library}/${action}${id ? '/' + id : ''}`, 
+        let result = $.ajax(`http://localhost:4080/api/${token()}/${module}/${library}/${action}${id ? '/' + id : ''}`, 
         {
             type: method,
             data : params

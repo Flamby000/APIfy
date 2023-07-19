@@ -36,11 +36,6 @@ public record RequestHandler(Application app) implements HttpHandler {
 		allowCORS(exchange);
 
 
-		
-
-
-
-
 
 		
 
@@ -106,17 +101,17 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		
 		// Check action parameters on instance
-		var expectedParameters = action.parameters();
+		//var expectedParameters = action.parameters();
 		List<Parameter<?>> params = List.of();
-		
+		//System.out.println(Method.needParameters(requestMethod) + "requestMethod" + requestMethod);
 		if(!Method.needParameters(requestMethod)) {
-			if(expectedParameters.size() > 0) {
-				response.appendError("no_parameters_expected", String.format("The method %s expect no parameters", action.name()));
-				response.send(400);
-				return;
-			}
+			//if(expectedParameters.size() > 0) {
+				//response.appendError("no_parameters_expected", String.format("The method %s expect no parameters", action.name()));
+				//response.send(400);
+				//return;
+			//}
 		} else {
-			params = request.getParameters(expectedParameters, response);
+			params = request.getParameters(response, requestMethod, action);
 			if (params == null) return;
 		}
 		
@@ -150,7 +145,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 		// Execute the action
 		try {
 			var db = app.db();
-			action.execute(app, response, params, db, request.id(), requestMethod);
+			action.execute(app, response, params, db, request.id(), requestMethod, request.patchFields());
 			app.close(db);
 		} catch (Exception e) {
 			e.printStackTrace();

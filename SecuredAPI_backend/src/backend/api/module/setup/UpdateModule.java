@@ -5,6 +5,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.json.JSONObject;
+
 import backend.api.endpoint.RequestData;
 import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
@@ -27,8 +29,8 @@ public record UpdateModule() implements Action {
 
 	
 	@Override
-	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method)
-			throws IOException {
+	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method,JSONObject patchFields) throws IOException {
+
 		RequestData.requireId(res, id);
 		if(res.isClosed()) return;
 		
