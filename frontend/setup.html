@@ -174,27 +174,41 @@
         let response = await request("Core", "Permission", "User", id, "GET");
         if(response.success) {
 
-
             let user = response.data.user;
             let user_details = document.createElement("div");
 
-            let user_data = document.createElement("div");
-            user_data.classList.add("user-data");
-            user_data.innerHTML =`
-                <p><b>First name</b> : ${user.firstName}</p>
-                <p><b>Last name</b> : ${user.lastName}</p>
-                <p><b>E-mail</b> : ${user.email}</p>
-                <p><b>Username</b> : ${user.username}</p>
-                <p><b>Creation date</b> : ${user.creationDate}</p>
-            `;
-            user_details.appendChild(user_data);
+            // let user_data = document.createElement("div");
+            // user_data.classList.add("user-data");
+            // user_data.innerHTML =`
+            //     <p><b>First name</b> : ${user.firstName}</p>
+            //     <p><b>Last name</b> : ${user.lastName}</p>
+            //     <p><b>E-mail</b> : ${user.email}</p>
+            //     <p><b>Username</b> : ${user.username}</p>
+            //     <p><b>Creation date</b> : ${user.creationDate}</p>
+            // `;
+            // user_details.appendChild(user_data);
+            user_details.appendChild(createDataList(
+                user,
+                {
+                    firstName : "First name",
+                    lastName : "Last name",
+                    email : "E-mail",
+                    username : "Login",
+                    creationDate : "Subscription"
+                },
+                {
+                    firstName : editUser
+                    lastName : editUser,
+                    email : editUser,
+                    username : editUser,
+                }
+            ));
+
             user_details.appendChild(document.createElement("hr"));
 
             let user_roles = document.createElement("div");
             user_roles.classList.add("user-roles");
-            user_roles.innerHTML = `
-                <h3>Roles</h3>
-            `;
+            user_roles.innerHTML = `<h3>Roles</h3>`;
             user_roles.appendChild(createTable(response.data.roles,
                 {
                     id : "Role ID",
@@ -222,6 +236,8 @@
             promptError(response);
         }
     }
+
+    async function editUser(field, value)
 
     async function removeRole(id, lineElement) {
         let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
@@ -254,18 +270,15 @@
     async function deleteUser(id, lineElement) {
         let response = await request("Core", "Permission", "User", id, "DELETE");
         if(!response.success) promptError(response);
-
         return response.success;
     }
 
-
-
     function promptError(response) {
+        if(!response.success) return; 
         let errors = "";
         response.errors.forEach(function(error) {
             errors += error.error + " : " + error.description + "\n";
         });
-
         response.warnings.forEach(function(warning) {
             errors += warning.warning + " : " + warning.description + "\n";
         });
@@ -275,16 +288,15 @@
 
     function createSubPart(title) {
         let subpart = document.createElement("div");
-
         let subpart_title = document.createElement("h3");
         subpart_title.classList.add("subpart-title");
         subpart_title.innerText = title;
         subpart.appendChild(subpart_title);
-
-
         subpart.appendChild(document.createElement("hr"));
         return subpart;
     }
+
+
 
 
     async function setupDBForm() {
@@ -306,9 +318,46 @@
     }
 
 
+    function createDataList(data, labels, editableLines) {
+        let element = document.createElement("div");
+        element.classList.add("data-list");
+        for(let label in labels) {
 
+            let line = document.createElement("p");
+            line.classList.add("data-line");
+            let label_element = document.createElement("b");
+            label_element.innerText = labels[label] + " : ";
+            line.appendChild(label_element);
+            let value_element = document.createElement("span");
+            value_element.innerText = data[label];
+            line.appendChild(value_element);
 
+            /* Add edit button at the line end
+              If button pressed, the span (value_element) became editable and the button became a "save" button
+            */
+            if(editableLines[label]) {
+                let edit_button = document.createElement("button");
+                edit_button.innerText = "Edit";
+                edit_button.addEventListener("click", function() {
+                    if(edit_button.innerText == "Edit") {
+                        edit_button.innerText = "Save";
+                        // border of the editable element became balck
+                        value_element.style.border = "1px solid black";
+                        value_element.contentEditable = true;
+                    } else {
+                        edit_button.innerText = "Edit";
+                        // border of the editable element became transparent
+                        value_element.style.border = "1px solid transparent";
+                        value_element.contentEditable = false;
+                    }
+                });
+                line.appendChild(edit_button);
+            }
 
+            element.appendChild(line);
+        }
+        return element;
+    }
 
 
     function createTable(data, columns, delete_actions, references, create = false) {
