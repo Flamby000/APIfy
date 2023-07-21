@@ -1,10 +1,10 @@
-package backend.api.module.setup;
+package backend.api.module.route;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.Map;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import backend.api.endpoint.RequestData;
@@ -12,28 +12,115 @@ import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
 import backend.api.interfaces.Application;
 import backend.api.interfaces.Method;
-import backend.api.interfaces.Parameter;
 
-public record UpdateModule() implements Action {
-
+public record Module() implements Action {
 	@Override
-	public String description() {return "Set up the database for the installation";}
-	
-
-	
-	@Override 
-	public List<String> methods() { return List.of(Method.POST); } 
-	
-	@Override
-	public boolean isGuestAction() { return false; }
+	public String description() {return "Check if the database is setup";}
 
 	
 	@Override
-	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method,JSONObject patchFields) throws IOException {
+	public Map<String, String> methodsDoc() {
+		return Map.of(
+			Method.GET, "Get the modules data",
+			Method.PATCH, "Modify a module"
+		);
+	}
+	
+	
+	@Override
+	public void get(Application app, ResponseData res, Connection db, String id){
+		if(id.equals(RequestData.INVALID)) {
+			// Get all modules
+			try {
+				
+				var modulesInst = new JSONArray();
+				
+				app.modules().forEach((module) -> {
+					var json = new JSONObject();
+					json.put("module_id", module.name());
+					json.put("module_description", module.description());
+					json.put("module_version", module.version());
+					json.put("module_author", module.author());
+					json.put("module_author_url", module.url());
+					//json.put("module_updated_at", module.updatedAt());
+					modulesInst.put(json);
+				});
+
+				// Check in db if the module is setup
+				var modulesDB = new JSONArray();
+				var statement = db.prepareStatement(String.format("SELECT * FROM %smodule;", app.prefix()));
+				var result = statement.executeQuery();
+				while(result.next()) {
+					var json = new JSONObject();
+					json.put("module_id", result.getString("module_id"));
+					json.put("module_description", result.getString("module_description"));
+					json.put("module_version", result.getString("module_version"));
+					json.put("module_author", result.getString("module_author"));
+					json.put("module_author_url", result.getString("module_author_url"));
+					json.put("module_updated_at", result.getTimestamp("module_updated_at"));
+					json.put("module_installed_at", result.getTimestamp("module_installed_at"));
+					modulesDB.put(json);
+				}
+
+				var modules = new JSONArray();
+				for(int i = 0; i < modulesInst.length(); i++) {
+					var module = modulesInst.getJSONObject(i);
+					var moduleDB = modulesDB.toList().stream().filter((obj) -> ((Map<?, ?>)obj).get("module_id").equals(module.getString("module_id"))).findFirst().orElse(null);
+					if(moduleDB == null) {
+						module.put("is_setup", false);
+					} else {
+						module.put("is_setup", true);
+						module.put("module_updated_at", ((Map<?, ?>)moduleDB).get("module_updated_at"));
+						module.put("module_installed_at", ((Map<?, ?>)moduleDB).get("module_installed_at"));
+					}
+					modules.put(module);
+				}
+					
+				res.addJSONObject("modules", new JSONObject().put("modules", modules));
+				res.send(200);
+				return;
+			} catch(Exception e) {
+				res.appendError("get_modules_failed", e.getMessage());
+				res.send(500);
+				return;
+			}
+		
+		} else {
+			if(RequestData.requireId(res, id)) return;
+			
+			try {
+				var statement = db.prepareStatement(String.format("SELECT * FROM %smodule WHERE module_id = ?;", app.prefix()));
+				statement.setString(1, id);
+				var result = statement.executeQuery();
+				if(!result.next()) {
+					res.appendError("module_not_found", "The module " + id + " is not found");
+					res.send(404);
+					return;
+				}
+				// Append result to res 
+				for(int i = 1; i <= result.getMetaData().getColumnCount(); i++) {
+					res.addString(result.getMetaData().getColumnName(i), result.getString(i));
+				}
+				statement.close();
+
+				res.send(200);
+				return;
+				
+			} catch(Exception e) {
+				res.appendError("module_not_found", "The module " + id + " was not found");
+				res.send(404);
+				return;			
+				}
+		}
+	}
+	
+	
+	
+	@Override
+	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id) {
 
 		RequestData.requireId(res, id);
 		if(res.isClosed()) return;
-		
 		
 		var modules = app.modules();
 		// Get the module with module.name() == id in modules (null if not in list)
@@ -169,6 +256,4 @@ public record UpdateModule() implements Action {
 		res.send(200);
 	}
 	
-	
-		
 }

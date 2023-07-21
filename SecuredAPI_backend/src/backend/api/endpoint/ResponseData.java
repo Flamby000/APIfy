@@ -83,6 +83,10 @@ public class ResponseData {
 	public void addMap(String name, Map<?, ?> value) {
 		appendResult(new Parameter<>(JSONObject.class, name, new JSONObject(value)));
 	}
+
+	public void addJSONObject(String name, JSONObject value) {
+		appendResult(new Parameter<>(JSONObject.class, name, value));
+	}
 	
 	
 
@@ -121,7 +125,7 @@ public class ResponseData {
 			statement.setInt(3, code);
 			statement.setBoolean(4, success(code));
 			statement.setString(7, response);
-		} catch (SQLException e) {e.printStackTrace();}
+		} catch (SQLException e) {}
 
         try {
 			exchange.sendResponseHeaders(code, response.getBytes().length);

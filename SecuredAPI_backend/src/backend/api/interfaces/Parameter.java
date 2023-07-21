@@ -13,6 +13,8 @@ public class Parameter<T> {
 	private final String description;
 	private final boolean must;
 	
+	public static String PATCH_FIELDS = "PATCH_FIELDS";
+
 	public Parameter(Class<T> type, String name, T value, String description) {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(value);

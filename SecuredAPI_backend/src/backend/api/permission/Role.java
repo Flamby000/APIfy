@@ -2,6 +2,7 @@ package backend.api.permission;
 
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,6 +72,58 @@ public class Role {
 			throw new Exception(e.getMessage());
 		}
 	}
+	
+	public static void updateField(Connection db, Application app, String id, String column, String value) throws Exception {
+		try {
+			var statement = db.prepareStatement(String.format("UPDATE %srole SET %s = ? WHERE role_id = ?;", app.prefix(), column));
+			statement.setString(1, value);
+			statement.setInt(2, Integer.parseInt(id));
+			statement.executeUpdate();
+			statement.close();
+		} catch(Exception e) {
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public List<User> users() {
+		// All users with the role id
+		try {
+			var statement = db.prepareStatement(String.format("SELECT * FROM %suser NATURAL JOIN %suser_role WHERE role_id = ?;", app.prefix(), app.prefix()));
+			statement.setInt(1, id);
+			var result = statement.executeQuery();
+			var users = new ArrayList<User>();
+			while(result.next()) {
+				var user = new backend.api.permission.User(db, app, result.getInt("user_id"), result.getString("username"), null, result.getString("email"), result.getString("first_name"),result.getString("last_name"), result.getString("phone"),result.getDate("user_created_at"));
+				users.add(user);
+			}
+			result.close();
+			statement.close();
+			return users;
+		} catch(Exception e) {
+			e.printStackTrace();
+			return List.of();
+		}
+	}
+
+	public static Role get(Connection db, Application app, String id) {
+		try {
+			var statement = db.prepareStatement(String.format("SELECT * FROM %srole WHERE role_id = ?;", app.prefix()));
+			statement.setInt(1, Integer.parseInt(id));
+			var result = statement.executeQuery();
+			if(!result.next()) {
+				result.close();
+				statement.close();
+				return null;
+			}
+			var role = new Role(db, app, result.getInt("role_id"), result.getString("role_name"), result.getString("role_description"), result.getDate("role_created_at"));
+			result.close();
+			statement.close();
+			return role;
+		} catch(Exception e) {
+			//e.printStackTrace();
+			return null;
+		}
+	}
 
 	public static List<Role> roles(Connection db, Application app) {
 		try {
@@ -96,8 +149,35 @@ public class Role {
 	}
 
 
+	
+	public static List<backend.api.permission.Action> permissions(Connection db, Application app, String role_id) throws SQLException {
+			var statement = db.prepareStatement(String.format(""
+					+ "SELECT action_id, action_description, library_id, module_id "
+					+ "FROM %saction_role NATURAL JOIN %saction NATURAL JOIN %slibrary "
+					+ "WHERE role_id = ?"
+					+ "ORDER BY CONCAT(module_id, library_id, action_id) ASC"
+					+ ";", app.prefix(), app.prefix(), app.prefix()));
+			statement.setString(1, role_id);
+			var result = statement.executeQuery();
+			var permissions = new ArrayList<backend.api.permission.Action>();
+			while(result.next()) {
+				var action_id = result.getString("action_id");
+				var action_description = result.getString("action_description");
+				var library_id = result.getString("library_id");
+				var module_id = result.getString("module_id");
+				var action = new backend.api.permission.Action(action_id, library_id, module_id, action_description);
+				permissions.add(action);
+			}
+			return permissions;
+
+	}
+
+	
+	
 	public String name() { return name; }
 	public String description() { return description; }
 	public Date creationDate() { return creationDate; }
 	public int id() { return id; }
+
+
 }

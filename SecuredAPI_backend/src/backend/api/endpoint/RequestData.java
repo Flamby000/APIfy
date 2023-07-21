@@ -124,7 +124,7 @@ public class RequestData {
 		var json = params();
 		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
 		
-		
+
 		
 		// Check if the JSON is valid
 		if(json == null || json.isEmpty()) {
@@ -138,22 +138,17 @@ public class RequestData {
 		
 		// extract from object the object with key "patch_fields"
 		if(method.equals(Method.PATCH)) {
-			if(object.has("patch_fields")) {
-				patchFields = object.getJSONObject("patch_fields");
-				object.remove("patch_fields");
-				// Check if one of the key of the patch_fields is not in the patchableFields of the action
-				var notPatchable = patchFields.keySet().stream().filter((key) -> !action.patchableFields().contains(key)).collect(Collectors.toList());
-				if(notPatchable.size() > 0) {
-					response.appendError("patch_fields_not_patchable", "The patch_fields object contains a key that is not patchable");
-					response.send(412);
-					return null;
-				}
-
-			} else {
-				response.appendError("patch_parameters_not_found", "The PATCH method need a patch_fields object");
+			
+			patchFields = object;
+			var possiblesKeys = action.patchableFields();
+			var notExpected = object.keySet().stream().filter((key) -> possiblesKeys.stream().noneMatch((possibleKey) -> possibleKey.equals(key))).collect(Collectors.toList());
+			System.out.println(notExpected);
+			if(notExpected.size() > 0) {
+				response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
 				response.send(412);
 				return null;
 			}
+
 		}
 		
 		var mustCount = expectedParameters.stream().filter((parameter) -> parameter.must()).count();
@@ -161,68 +156,80 @@ public class RequestData {
 		var sentCount = object.keySet().stream().count();
 
 		// check the number of needed parameters
-		if(sentCount < mustCount || sentCount > mustCount+nonMustCount) {
-			if(nonMustCount == 0) response.appendError("parameter_count_wrong", "The request expect " + mustCount + " parameters");
-			else response.appendError("parameter_count_wrong", "The request expect between " + mustCount + " and " + (nonMustCount+mustCount) + " parameters");
-			
-			response.send(412);
-			return null;
+		if(!method.equals(Method.PATCH)) {
+			if(sentCount < mustCount || sentCount > mustCount+nonMustCount) {
+				if(nonMustCount == 0) response.appendError("parameter_count_wrong", "The request expect " + mustCount + " parameters");
+				else response.appendError("parameter_count_wrong", "The request expect between " + mustCount + " and " + (nonMustCount+mustCount) + " parameters");
+				
+				response.send(412);
+				return null;
+			}
 		}
 
-		
-		// Iterate all expected
-		for(var parameter : expectedParameters) {
 
-			// Check parameter presence
-			if(!object.has(parameter.name()) && parameter.must()) {
-				if(parameter.value() != null ) {
-					result.add(new Parameter<>(parameter.type(), parameter.name(), parameter.value()));
-				} else {
-					response.appendError("parameter_missing", "The parameter \"" + parameter.name() + "\" is missing");
+		// Iterate all expected
+		if(!method.equals(Method.PATCH)) {
+			for(var parameter : expectedParameters) {
+	
+				// Check parameter presence
+				if(!object.has(parameter.name()) && parameter.must()) {
+					if(parameter.value() != null ) {
+						result.add(new Parameter<>(parameter.type(), parameter.name(), parameter.value()));
+					} else {
+						response.appendError("parameter_missing", "The parameter \"" + parameter.name() + "\" is missing");
+						response.send(412);
+						return null;
+					}
+				}
+	
+				// Check parameter type
+				if(object.has(parameter.name()) && (object.isNull(parameter.name()))) {
+					response.appendError("bad_parameter_name", "The parameter \"" + parameter.name() + "\" must be of type " + parameter.type());
 					response.send(412);
 					return null;
 				}
-			}
-
-			// Check parameter type
-			if(object.has(parameter.name()) && (object.isNull(parameter.name()))) {
-				response.appendError("bad_parameter_name", "The parameter \"" + parameter.name() + "\" must be of type " + parameter.type());
-				response.send(412);
-				return null;
-			}
-			
-			
-			// Check the type of the argument
-			var requestType = object.get(parameter.name()).getClass();
-			if(requestType.equals(org.json.JSONArray.class)) requestType = List.class;
-			if(requestType.equals(org.json.JSONObject.class)) requestType = Map.class;
-			if(object.has(parameter.name()) && (!parameter.type().equals(requestType))) {
-			
-				response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +requestType.getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
-				response.send(412);
-				return null;
-			}
-
+	
+				
+				// Check the type of the argument
+				var requestType = object.get(parameter.name()).getClass();
+				
+				if(requestType.equals(org.json.JSONArray.class)) requestType = List.class;
+				if(requestType.equals(org.json.JSONObject.class)) requestType = Map.class;
+				
+				if(object.has(parameter.name()) && (!parameter.type().equals(requestType))) {
+				
+					response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +requestType.getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
+					response.send(412);
+					return null;
+				}
+	
+			}	
 		}
+		
+
 		
 		//  send 400 if there is parameters not expected 
 		//var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
-		var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
+		
+		if(!method.equals(Method.PATCH)) {
 
-		if(notExpected.size() > 0) {
-			response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
-			response.send(412);
-			return null;
+			var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
+
+			if(notExpected.size() > 0) {
+				response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
+				response.send(412);
+				return null;
+			}
+			
+			
+			// Iterate object to set result for the action
+			object.keySet().forEach((key) -> {
+				var value = object.get(key);
+				var parameter = expectedParameters.stream().filter((p) -> p.name().equals(key)).findFirst().get();
+				result.add(new Parameter<>(parameter.type(), parameter.name(), value));
+			});
 		}
-		
-		
-		// Iterate object to set result for the action
-		object.keySet().forEach((key) -> {
-			var value = object.get(key);
-			var parameter = expectedParameters.stream().filter((p) -> p.name().equals(key)).findFirst().get();
-			result.add(new Parameter<>(parameter.type(), parameter.name(), value));
-		});
-		
+
 		return result;
 	}
 	

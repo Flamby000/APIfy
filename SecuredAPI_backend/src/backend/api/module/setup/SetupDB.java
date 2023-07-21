@@ -1,12 +1,11 @@
 package backend.api.module.setup;
-import java.io.IOException;
 import java.util.List;
-
-import org.json.JSONObject;
+import java.util.Map;
 
 import backend.api.endpoint.ResponseData;
 import backend.api.interfaces.Action;
 import backend.api.interfaces.Application;
+import backend.api.interfaces.Method;
 import backend.api.interfaces.Parameter;
 import backend.api.permission.Role;
 
@@ -18,6 +17,15 @@ public record SetupDB() implements Action {
 
 	@Override
 	public String description() {return "Set up the database for the installation";}
+	
+	@Override
+	public Map<String, String> methodsDoc() {
+		return Map.of(
+			Method.POST, "Setup the database"
+		);
+	}
+	
+	
 	
 	@Override
 	public List<Parameter<?>> parameters() {
@@ -32,11 +40,9 @@ public record SetupDB() implements Action {
 	
 	
 	
+
 	@Override
-	public boolean isGuestAction() { return true; }
-	
-	@Override
-	public void execute(Application app, ResponseData res, List<Parameter<?>> params, Connection db, String id, String method,JSONObject patchFields) throws IOException {
+	public void post(Application app, ResponseData res, Connection db, List<Parameter<?>> params) {
 		
 		//if(RequestData.requireId(response, id)) return;
 		

@@ -71,6 +71,8 @@
     let category_content;
     let modal;
     let roles = [];
+    let users = [];
+    let actions = [];
     let current_modal_id = false;
 
 
@@ -86,18 +88,39 @@
             });
         });
 
+        let update_module = await request("Core", "Route", "Module", "Core", "PATCH");
+
         let role_response = await request("Core", "Permission", "Role", false, "GET");
         roles = role_response.data.roles;
 
+        let user_response = await request("Core", "Permission", "User", false, "GET");
+        users = user_response.data.users;
+
+        let action_response = await request("Core", "Route", "Action", false, "GET");
+        actions = action_response.data.actions;
+
     }
 
+
+    // category_content.appendChild(await createLogCategory());
+    //     } else if(category.innerText == "API Rest") {
+    //         category_content.appendChild(await createAPIRestCategory());
+    //     } else if(category.innerText == "Statistiques") {
+    //         category_content.appendChild(await createStatistiquesCategory());
+
+    /** API REST CATEGORY PART*/
+    async function createAPIRestCategory() {
+        let category_api = document.createElement("div");
+
+        let response = await request("Core", "Route", "Module", id = false, method = "GET");
+        console.log(response);
+    }
 
     /** ROLE CATEGORY PART **/
     async function createPermissionCategory() {
         let category_permission = document.createElement("div");
 
         let response = await request("Core", "Permission", "Role", id = false, method = "GET");
-        console.log(response);
         category_permission.appendChild(createSubPart("Roles list"));
         category_permission.appendChild(createTable(response.data.roles,
             { 
@@ -174,15 +197,142 @@
 
     /** ROLE DETAILS PART **/
     async function roleDetails(id) {
-        let response = await request("Core", "Permission", "role", id, "GET");
+        let response = await request("Core", "Permission", "Role", id, "GET");
         if(response.success) {
-            // TODO : add role details
-            console.log(response);
+
+            let role = response.data.role;
+            let role_details = document.createElement("div");
+
+            role_details.appendChild(createDataList(
+                role,
+                {
+                    id : "Role ID",
+                    role_name : "Name",
+                    role_description : "Description",
+                    creationDate : "Creation date"
+                },
+                {
+                    role_name : editRole,
+                    role_description : editRole
+                }
+            ));
+            role_details.appendChild(document.createElement("hr"));;
+            
+
+            // Get users with this role
+            let users_with_role = document.createElement("div");
+            users_with_role.classList.add("users-with-role");
+            users_with_role.innerHTML = `<h3>Users with this role</h3>`;
+            users_with_role.appendChild(createTable(response.data.users,
+                {
+                    id : "User ID",
+                    email :"E-mail",
+                    username : "Login",
+                    first_name : "First name",
+                    last_name : "Last name",
+                    creationDate : "Subscription"
+                },
+                {   
+                    Unassign : removeUserFromRole
+                },
+                {
+                    id : userDetails
+                },
+                {
+                    label : "Assign",
+                    function : addUserFromRole,
+                    selectLabelColumn : "username",
+                    options : users
+                }
+            ));
+            role_details.appendChild(users_with_role);
+
+
+            let permissions_of_role = document.createElement("div");
+            permissions_of_role.classList.add("permissions-of-role");
+            permissions_of_role.innerHTML = `<h3>Permissions of this role</h3>`;
+            permissions_of_role.appendChild(createTable(response.data.permissions,
+                {
+                    action_id : "Action",
+                    library_id : "Library",
+                    module_id : "Module",
+                    action_description : "Description"
+                },
+                {   
+                    Unassign : removePermissionFromRole
+                    id_name : "action_id"
+                },
+                {
+                    action_id : permissionDetails
+                },
+                {
+                    label : "Assign",
+                    function : addPermissionToRole,
+                    selectLabelColumn : "action_id",
+                    options : actions,
+                    id_name : "action_id"
+
+                }
+            ));
+            
+            role_details.appendChild(permissions_of_role);
+
+            openModal(`${role.id} - ${role.role_name.toUpperCase()}`, role_details, role.id);
         } else {
             promptError(response);
         }
     }
 
+    async function removePermissionFromRole(id, lineElement) {
+        console.log("Remove permission " + id + " : " + current_modal_id);
+        let response = await request("Core", "Permission", "ActionAssign", false, "DELETE", {
+            "role_id" : parseInt(current_modal_id),
+            "action_id" : id
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function addPermissionToRole(id) {
+        let response = await request("Core", "Permission", "ActionAssign", false, "POST", {
+            "role_id" : parseInt(current_modal_id),
+            "action_id" : id
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function permissionDetails(id) {
+        if(!id) return;
+        console.log("Permission detials " + id);
+    }
+
+    async function editRole(field, value) {
+        let response = await request("Core", "Permission", "Role", current_modal_id, "PATCH", 
+            { [field] : value }
+        );
+        //console.log(response);
+
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+    async function addUserFromRole(id) {
+        let response = await request("Core", "Permission", "RoleAssign", false, "POST", {
+            "role_id" : parseInt(current_modal_id),
+            "user_id" : parseInt(id)
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function removeUserFromRole(id, lineElement) {
+        let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
+            "role_id" : parseInt(current_modal_id),
+            "user_id" : parseInt(id)
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
 
     /** USER DETAILS PART **/
     async function userDetails(id) {
@@ -240,8 +390,9 @@
     }
 
     async function editUser(field, value) {
+        console.log(field, value);
         let response = await request("Core", "Permission", "User", current_modal_id, "PATCH", 
-            { patch_fields : { [field] : value } }
+            { [field] : value } 
         );
         if(!response.success) promptError(response);
         return response.success;
@@ -264,9 +415,6 @@
         if(!response.success) promptError(response);
         return response.success;
     }
-
-
-
 
 
 
@@ -297,10 +445,13 @@
 
     
     function openModal(title, content, id = false) {
+        
         id ? current_modal_id = id : current_modal_id = false;
         modal.classList.remove("hide");
         document.getElementById("modal-title").innerText = title;
-        document.getElementById("modal-text").appendChild(content)
+        let modal_text = document.getElementById("modal-text");
+        modal_text.innerHTML = "";
+        modal_text.appendChild(content)
         document.getElementById("modal-close").addEventListener("click", function() {
             closeModal();
         });
@@ -343,7 +494,13 @@
             category_content.appendChild(await createUserCategory());
         } else if(category.innerText == "Permissions") {
             category_content.appendChild(await createPermissionCategory());
-        } 
+        } else if(category.innerText == "Logs") {
+            category_content.appendChild(await createLogCategory());
+        } else if(category.innerText == "API Rest") {
+            category_content.appendChild(await createAPIRestCategory());
+        } else if(category.innerText == "Statistiques") {
+            category_content.appendChild(await createStatistiquesCategory());
+        }
     } 
 
 
@@ -363,6 +520,9 @@
                 "admin_lastname" : admin_lastname
             }
         );
+
+        response = await request("Core", "Setup", "UpdateModule", "Core", "PATCH");
+
     }
 
 
@@ -483,8 +643,9 @@
             for(let action in delete_actions) {
                 let button = document.createElement("button");
                 button.innerText = action;
-                button.addEventListener("click", function() {
-                    if(delete_actions[action](renamed_data[i].id)) {
+                button.addEventListener("click", async function() {
+                    let id_name = delete_actions[action].id_name ? delete_actions[action].id_name : "id";
+                    if(await delete_actions[action](renamed_data[i][id_name])) {
                         tr.remove();
                     }
                 });
@@ -509,7 +670,8 @@
             for(let option in addExisting.options) {
                 let option_element = document.createElement("option");
                 option_element.innerText = addExisting.options[option][addExisting.selectLabelColumn];
-                option_element.value = addExisting.options[option].id;
+                if(!addExisting.id_name) option_element.value = addExisting.options[option].id;
+                else option_element.value = addExisting.options[option][addExisting.id_name];
                 select.appendChild(option_element);
             }
 
@@ -617,9 +779,9 @@
                         data[column] = tr.getElementsByClassName(column)[0].getElementsByTagName("input")[0].value;
                     }
                 }
-                let creation_success = await createNew.function(false, data);
                 
-                if(creation_success) {
+                let creation_success = await createNew.function(false, data);
+                if(creation_success.success) {
                     let newData = creation_success; 
                     // add new line with the selected role
                     let new_tr = document.createElement("tr");
@@ -631,6 +793,7 @@
                         if(references[column]) {
                             td.classList.add("reference");
                             td.addEventListener("click", function() {
+                                
                                 references[column](newData.id);
                             });
                         }

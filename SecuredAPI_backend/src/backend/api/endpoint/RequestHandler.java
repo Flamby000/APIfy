@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Objects;
 
+
 import com.sun.net.httpserver.HttpHandler;
 
 import backend.api.interfaces.Application;
@@ -28,7 +29,6 @@ public record RequestHandler(Application app) implements HttpHandler {
 	public void handle(HttpExchange exchange) throws IOException {
 
 		// TODO : manage timeout (504 Gateway Timeout)
-
 
 		Objects.requireNonNull(exchange, "Exchange cannot be null");
 
@@ -104,17 +104,20 @@ public record RequestHandler(Application app) implements HttpHandler {
 		//var expectedParameters = action.parameters();
 		List<Parameter<?>> params = List.of();
 		//System.out.println(Method.needParameters(requestMethod) + "requestMethod" + requestMethod);
+
 		if(!Method.needParameters(requestMethod)) {
+
 			//if(expectedParameters.size() > 0) {
 				//response.appendError("no_parameters_expected", String.format("The method %s expect no parameters", action.name()));
 				//response.send(400);
 				//return;
 			//}
 		} else {
+
 			params = request.getParameters(response, requestMethod, action);
 			if (params == null) return;
 		}
-		
+
 		User user = null;
 
 		if (!request.actionName().equals("SetupDB")) {
@@ -141,11 +144,30 @@ public record RequestHandler(Application app) implements HttpHandler {
 				
 			}
 		}
+		
+
 
 		// Execute the action
 		try {
 			var db = app.db();
-			action.execute(app, response, params, db, request.id(), requestMethod, request.patchFields());
+			switch(requestMethod) {
+				case Method.POST :
+					action.post(app, response, db, params);
+					break;
+				case Method.GET :
+					action.get(app, response, db, request.id());
+					break;
+				case Method.PATCH :
+					action.patch(app, response, db, request.patchFields(), request.id());
+					break;
+				case Method.DELETE :
+					action.delete(app, response, db, params, request.id());
+				default :
+					response.appendError("method_not_supported", "The server doesn't support " + requestMethod + " method.");
+					response.send(400);
+			}
+					
+			//action.execute(app, response, params, db, request.id(), requestMethod, request.patchFields());
 			app.close(db);
 		} catch (Exception e) {
 			e.printStackTrace();

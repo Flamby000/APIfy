@@ -1,5 +1,6 @@
 package backend.api.module.permission;
 
+
 import java.util.List;
 
 import backend.api.interfaces.Action;
@@ -24,9 +25,17 @@ public record Permission() implements Library {
 		return List.of(
 			new User(),
 			new Role(),
-			new RoleAssign()
+			new RoleAssign(),
+			new ActionAssign()
 		);		
-		
+
 	}
+
+	/** permissions (by role) */
+	/* SELECT action_id, action_description, library_id, module_id
+		FROM api_action_role NATURAL JOIN api_action NATURAL JOIN api_library
+		WHERE role_id = 1; 
+	*/
+
 	
 }
