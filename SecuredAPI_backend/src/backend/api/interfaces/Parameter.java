@@ -1,6 +1,7 @@
 package backend.api.interfaces;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.json.JSONObject;
@@ -57,6 +58,15 @@ public class Parameter<T> {
 		return null;
 	}
 	
+
+	public Map<String, String> toMap() {
+		return Map.of("name", name, 
+				"value", value == null ? "null" : value.toString(), 
+				"description", description, 
+				"must", String.valueOf(must),
+				"type", type.getSimpleName()
+				);
+	}
 	
 	static public Parameter<?> find(List<Parameter<?>> params, String name) {
 		return params.stream().filter((param) -> param.name().equals(name)).findFirst().orElse(null);

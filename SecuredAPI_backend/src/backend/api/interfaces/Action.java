@@ -27,6 +27,12 @@ public interface Action {
 		return List.of();
 	}
 	
+	default List<String> deleteFields() {
+		return List.of();
+	}
+
+
+	
 	
 	//void execute(Application app, ResponseData response, List<Parameter<?>> params, Connection db, String id, String method, JSONObject patchFields) throws IOException;
 	
@@ -43,7 +49,7 @@ public interface Action {
 		response.err("action_doesnt_support_method", "The action " + name() + " dosn't support GET method.");
 		response.send(400);
 	};
-	default void delete(Application app, ResponseData response, Connection db, List<Parameter<?>> params, String id) {
+	default void delete(Application app, ResponseData response, Connection db, List<Parameter<?>> deleteFields, String id) {
 		response.err("action_doesnt_support_method", "The action " + name() + " dosn't support DELETE method.");
 		response.send(400);
 	};

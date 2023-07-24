@@ -122,8 +122,15 @@ public record Role() implements Action{
 	@Override
 	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id){
 		if(RequestData.requireId(res, id)) return;
-		// TODO : delete the role
-		res.send(501);
+
+		try {
+			backend.api.permission.Role.delete(db, app, id);
+			res.send(200);
+		} catch (Exception e) {
+			res.err("error", e.getMessage());
+			res.send(500);
+		}
+
 		return;
 	};
 	

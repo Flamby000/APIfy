@@ -85,6 +85,18 @@ public class Role {
 		}
 	}
 	
+	// Delete
+	public static void delete(Connection db, Application app, String id) throws Exception {
+		try {
+			var statement = db.prepareStatement(String.format("DELETE FROM %srole WHERE role_id = ?;", app.prefix()));
+			statement.setInt(1, Integer.parseInt(id));
+			statement.executeUpdate();
+			statement.close();
+		} catch(Exception e) {
+			throw new Exception(e.getMessage());
+		}
+	}
+
 	public List<User> users() {
 		// All users with the role id
 		try {

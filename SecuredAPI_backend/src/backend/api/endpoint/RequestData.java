@@ -36,6 +36,7 @@ public class RequestData {
 	private String id;
 	private String token;
 	private JSONObject patchFields = null;
+	private JSONObject deleteFields = null;
 	
 	
 	public RequestData(HttpExchange exchange, Application app, PreparedStatement statement, ResponseData response) throws IOException {
@@ -114,6 +115,20 @@ public class RequestData {
 	public String token() { return token;}
 	
 	public JSONObject patchFields() { return patchFields; }
+	public List<Parameter<?>> deleteFields() { 
+		// deleteFields to list of Parameter
+		try {
+			var result = new ArrayList<Parameter<?>>();
+			deleteFields.keySet().forEach((key) -> {
+				result.add(new Parameter<String>(String.class, key, deleteFields.getString(key)));
+			});
+			return result;
+
+		} catch (Exception e) {
+			return List.of();
+		}
+			
+	}
 	
 	
 	@SuppressWarnings("unchecked")
@@ -124,16 +139,24 @@ public class RequestData {
 		var json = params();
 		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
 		
-
 		
 		// Check if the JSON is valid
-		if(json == null || json.isEmpty()) {
+		
+		if(json == null || json.isEmpty() ) {
+			if(method.equals(Method.DELETE)) return List.of();
 			response.appendError("parameters_expected", "The action need parameters");
 			response.send(412);
 			return null;
 		}
-		
-		var object = new JSONObject(json);
+		JSONObject object;
+		try {
+			object = new JSONObject(json);
+		} catch (Exception e) {
+			if(method.equals(Method.DELETE)) return List.of();
+			response.appendError("invalid_json", "The provided JSON is invalid");
+			response.send(412);
+			return null;
+		}
 		
 		
 		// extract from object the object with key "patch_fields"
@@ -149,6 +172,18 @@ public class RequestData {
 				return null;
 			}
 
+		}
+		
+		if(method.equals(Method.DELETE)) {
+			deleteFields = object;
+			var possiblesKeys = action.deleteFields();
+			var notExpected = object.keySet().stream().filter((key) -> possiblesKeys.stream().noneMatch((possibleKey) -> possibleKey.equals(key))).collect(Collectors.toList());
+			System.out.println(notExpected);
+			if(notExpected.size() > 0) {
+				response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
+				response.send(412);
+				return null;
+			}
 		}
 		
 		var mustCount = expectedParameters.stream().filter((parameter) -> parameter.must()).count();
@@ -168,7 +203,7 @@ public class RequestData {
 
 
 		// Iterate all expected
-		if(!method.equals(Method.PATCH)) {
+		if(!method.equals(Method.PATCH) && !method.equals(Method.DELETE)) {
 			for(var parameter : expectedParameters) {
 	
 				// Check parameter presence
@@ -189,6 +224,12 @@ public class RequestData {
 					return null;
 				}
 	
+				
+				// default parameter into object
+				if(!object.has(parameter.name())) {
+					object.put(parameter.name(), parameter.value());
+
+				}
 				
 				// Check the type of the argument
 				var requestType = object.get(parameter.name()).getClass();
@@ -211,7 +252,7 @@ public class RequestData {
 		//  send 400 if there is parameters not expected 
 		//var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
 		
-		if(!method.equals(Method.PATCH)) {
+		if(!method.equals(Method.PATCH) && !method.equals(Method.DELETE)) {
 
 			var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
 
@@ -244,5 +285,6 @@ public class RequestData {
 		return false;
 	}
 
-	
+
+
 }

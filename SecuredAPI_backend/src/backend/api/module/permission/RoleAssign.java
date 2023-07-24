@@ -24,6 +24,10 @@ public record RoleAssign() implements Action {
 		);
 	}
 	
+	@Override
+	public List<String> deleteFields() {
+		return List.of("role_id", "user_id");
+	}
 	
 	@Override
 	public List<Parameter<?>> parameters() {

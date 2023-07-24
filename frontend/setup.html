@@ -68,13 +68,13 @@
     </main>
 
     <script>
+    
     let category_content;
     let modal;
     let roles = [];
     let users = [];
     let actions = [];
     let current_modal_id = false;
-
 
     window.onload = async function() {
         category_content = document.getElementById("category-content");
@@ -99,6 +99,8 @@
         let action_response = await request("Core", "Route", "Action", false, "GET");
         actions = action_response.data.actions;
 
+        
+
     }
 
 
@@ -113,7 +115,6 @@
         let category_api = document.createElement("div");
 
         let response = await request("Core", "Route", "Module", id = false, method = "GET");
-        console.log(response);
     }
 
     /** ROLE CATEGORY PART **/
@@ -141,9 +142,9 @@
                 needed_columns : ["role_name", "role_description"],
                 function : createRole
             }
-
         ));
 
+        
         return category_permission;
     }
 
@@ -159,7 +160,21 @@
         return response.success ? response.data.role : false;
     }
     
+    /** SESSION DETAILS **/
+    async function sessionDetails(id, lineElement) {
+        console.log("SESSION DETAILS : " + id);
+        // let response = await request("Core", "Permission", "Session", id, "GET");
+        // if(!response.success) promptError(response);
+        // return response.success ? response.data.session : false;
+    }
 
+    /** Request details **/
+    async function requestDetails(id, lineElement) {
+        console.log("REQUEST DETAILS : " + id);
+        // let response = await request("Core", "Permission", "Request", id, "GET");
+        // if(!response.success) promptError(response);
+        // return response.success ? response.data.request : false;
+    }
 
     /** USER CATEGORY PART **/
     async function createUserCategory() {
@@ -222,7 +237,9 @@
             // Get users with this role
             let users_with_role = document.createElement("div");
             users_with_role.classList.add("users-with-role");
-            users_with_role.innerHTML = `<h3>Users with this role</h3>`;
+            // users_with_role.innerHTML = `<h3>Users with this role</h3>`;
+            users_with_role.appendChild(createSubPart("Users with this role"));
+
             users_with_role.appendChild(createTable(response.data.users,
                 {
                     id : "User ID",
@@ -250,7 +267,8 @@
 
             let permissions_of_role = document.createElement("div");
             permissions_of_role.classList.add("permissions-of-role");
-            permissions_of_role.innerHTML = `<h3>Permissions of this role</h3>`;
+            // permissions_of_role.innerHTML = `<h3>Permissions of this role</h3>`;
+            role_details.appendChild(createSubPart("Permissions of this role"));
             permissions_of_role.appendChild(createTable(response.data.permissions,
                 {
                     action_id : "Action",
@@ -260,7 +278,7 @@
                 },
                 {   
                     Unassign : removePermissionFromRole
-                    id_name : "action_id"
+                    // id_name : "action_id"
                 },
                 {
                     action_id : permissionDetails
@@ -284,7 +302,6 @@
     }
 
     async function removePermissionFromRole(id, lineElement) {
-        console.log("Remove permission " + id + " : " + current_modal_id);
         let response = await request("Core", "Permission", "ActionAssign", false, "DELETE", {
             "role_id" : parseInt(current_modal_id),
             "action_id" : id
@@ -302,16 +319,12 @@
         return response.success;
     }
 
-    async function permissionDetails(id) {
-        if(!id) return;
-        console.log("Permission detials " + id);
-    }
+
 
     async function editRole(field, value) {
         let response = await request("Core", "Permission", "Role", current_modal_id, "PATCH", 
             { [field] : value }
         );
-        //console.log(response);
 
         if(!response.success) promptError(response);
         return response.success;
@@ -329,6 +342,211 @@
         let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
             "role_id" : parseInt(current_modal_id),
             "user_id" : parseInt(id)
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    /** PERMISSION DETAILS **/
+    async function permissionDetails(id) {
+        if(!id) return;
+        let response = await request("Core", "Route", "Action", id, "GET");
+        
+        if(response.success) {
+            let action = response.data.action;
+            let action_details = document.createElement("div");
+
+            action_details.appendChild(createDataList(
+                action,
+                {
+                    action_id : "Action",
+                    library_id : "Library", 
+                    module_id : "Module",
+                    action_description : "Description"
+                },
+                false
+            ));
+
+            let roles_of_action = response.data.roles;
+            let roles_of_action_div = document.createElement("div");
+            // roles_of_action_div.innerHTML = `<h3>Roles with this permission</h3>`;
+            action_details.appendChild(createSubPart("Roles with this permission"));
+
+            roles_of_action_div.appendChild(createTable(roles_of_action,
+                {
+                    id : "Role ID",
+                    role_name : "Name",
+                    role_description : "Description",
+                    creationDate : "Creation date"
+                },
+                {   
+                    Unassign : removeRoleFromPermission
+                },
+                {
+                    id : roleDetails
+                },
+                {
+                    label : "Assign",
+                    function : addRoleToPermission,
+                    selectLabelColumn : "role_name",
+                    options : roles
+                }
+            ));
+            action_details.appendChild(roles_of_action_div);
+
+
+            /** Test part **/
+            let test_div = document.createElement("div");
+            test_div.classList.add("test-div");
+            action_details.appendChild(createSubPart("Try the action"));
+            let test_form = document.createElement("form");
+            test_form.classList.add("test-form");
+            // Test form with a textfield for JSON data and a select button containing all response.data.methods(method is an objet with KEY as method and VALUE as description) (using map)
+            test_form.innerHTML = `
+            <table>
+                <tr>
+                    <th><label for="test-form-method">METHOD : </label></th>
+                    <th><label for="test-form-token"> TOKEN : </label></th>
+                    <th><label for="test-form-id">ID : </label></th>
+                    <th></th>
+                </tr>
+                <tr>
+                    <th>
+                        <select id="test-form-method" name="test-form-method">
+                            ${Object.keys(response.data.methods).map(method => `<option value="${method}">${method} - ${response.data.methods[method]}</option>`).join("")}
+                        </select>
+                    </th>
+                    <th>
+                        <input type="text" id="test-form-token" name="test-form-token" placeholder="Token" value="${token()}">
+                    <th>
+                        <input type="text" id="test-form-id" name="test-form-id" placeholder="ID (empty for no element)">
+                    </th>
+                    <th>
+                        <input type="submit" value="Send request">
+                    </th>
+                </tr>
+            </table>
+            <!-- Path of the URL not editable-->
+            <input type="text" style="width:70%" id="test-form-path" name="test-form-path" placeholder="Path" value="${apiPath()}/${token()}/${response.data.action.module_id}/${response.data.action.library_id}/${response.data.action.action_id}" readonly>
+            <!-- Text area for JSON -->
+            <textarea id="test-form-json" style="width:100%" name="test-form-json" placeholder="JSON data"></textarea>
+            <!-- Text area for response -->
+            <textarea id="test-form-response" style="width:100%" name="test-form-response" placeholder="Response" readonly></textarea>
+            `;
+
+            // On token field change, update path
+            
+
+            function updateAPIPath() {
+                let id = test_form.querySelector("#test-form-id").value.trim();
+                // if id string is empty
+                //if(id === "")
+                
+                let token = test_form.querySelector("#test-form-token").value;
+                test_form.querySelector("#test-form-path").value = `${apiPath()}/${token}/${response.data.action.module_id}/${response.data.action.library_id}/${response.data.action.action_id}${!id || id === "" ? "" : "/" + id}`;
+            }
+            updateAPIPath();
+
+            // On token field input value change, update path
+            test_form.querySelector("#test-form-token").addEventListener("input", updateAPIPath);
+
+            // on ID field input value change, update path
+            test_form.querySelector("#test-form-id").addEventListener("input", updateAPIPath);
+
+            // On select change
+            test_form.querySelector("#test-form-method").addEventListener("change", setRequestJsonData);
+            setRequestJsonData({target : test_form.querySelector("#test-form-method")});
+            
+            function setRequestJsonData(e) {
+                // if method is GET/OPTIONS/HEAD, hide test-form-json
+                if(["GET", "OPTIONS", "HEAD"].includes(e.target.value)) {
+                    test_form.querySelector("#test-form-json").style.display = "none";
+                } else if (["POST", "PUT", "DELETE"].includes(e.target.value)){
+                    test_form.querySelector("#test-form-json").style.display = "block";
+                    // console.log(response.data.parameters);
+                    let data_store = {};
+                    response.data.parameters.forEach(parameter => {
+                        // data_store[parameter.name] = parameter.value =! null ? parameter.value : "DEFAULT"; 
+                        data_store[parameter.name] = parameter.value;
+                    });
+                    test_form.querySelector("#test-form-json").value = JSON.stringify(data_store, null, 4);
+                    // Make the text area auto resize height to fit content
+                    test_form.querySelector("#test-form-json").style.height = "auto";
+                    test_form.querySelector("#test-form-json").style.height = (test_form.querySelector("#test-form-json").scrollHeight + 5) + "px";
+
+                } else if (["PATCH"].includes(e.target.value)) {
+                    test_form.querySelector("#test-form-json").style.display = "block";
+                    console.log(response.data.patchable_fields);
+                    let data_store = {};
+                    response.data.patchable_fields.forEach(parameter => {
+                        // data_store[parameter.name] = parameter.value =! null ? parameter.value : "DEFAULT"; 
+                        data_store[parameter] = "DEFAULT";
+                    });
+                    test_form.querySelector("#test-form-json").value = JSON.stringify(data_store, null, 4);
+                    // Make the text area auto resize height to fit content
+                    test_form.querySelector("#test-form-json").style.height = "auto";
+                    test_form.querySelector("#test-form-json").style.height = (test_form.querySelector("#test-form-json").scrollHeight + 5) + "px";
+                }
+            }
+
+
+            // Test the action
+            test_form.addEventListener("submit", async function(e) {
+                e.preventDefault();
+                let url = test_form.querySelector("#test-form-path").value;
+                let method = test_form.querySelector("#test-form-method").value;
+                let json = JSON.parse(test_form.querySelector("#test-form-json").value);
+                let response = await requestURL(url, method, json); 
+                test_form.querySelector("#test-form-response").value = JSON.stringify(response, null, 4);
+                // Make the text area auto resize height to fit content
+                test_form.querySelector("#test-form-response").style.height = "auto";
+                test_form.querySelector("#test-form-response").style.height = (test_form.querySelector("#test-form-response").scrollHeight + 5) + "px";
+                
+            });
+
+
+            test_div.appendChild(test_form);
+            action_details.appendChild(test_div);
+            
+            // add History
+            action_details.appendChild(createSubPart("Request history"));
+            action_details.appendChild(createTable(response.data.history,
+            { 
+                request_id : "ID",
+                session_id : "Session ID",
+                code : "Code",
+                method : "Method",
+                success : "Success",
+                creation_date : "Creation date"
+            },
+            false,
+            {
+                session_id : sessionDetails,
+                request_id : requestDetails
+            }));
+
+            
+            
+            openModal(`${action.library_id} / ${action.module_id} / ${action.action_id}`, action_details, action.action_id);
+        } else {
+            promptError(response);
+        }
+        
+    }
+
+    async function removeRoleFromPermission(id, lineElement) {
+        let response = await request("Core", "Permission", "ActionAssign", false, "DELETE", {
+            "role_id" : parseInt(id),
+            "action_id" : current_modal_id
+        });
+        if(!response.success) promptError(response);
+        return response.success;
+    }
+
+    async function addRoleToPermission(id) {
+        let response = await request("Core", "Permission", "ActionAssign", false, "POST", {
+            "role_id" : parseInt(id),
+            "action_id" : current_modal_id
         });
         if(!response.success) promptError(response);
         return response.success;
@@ -390,7 +608,6 @@
     }
 
     async function editUser(field, value) {
-        console.log(field, value);
         let response = await request("Core", "Permission", "User", current_modal_id, "PATCH", 
             { [field] : value } 
         );
@@ -434,11 +651,12 @@
 
     function createSubPart(title) {
         let subpart = document.createElement("div");
+        subpart.appendChild(document.createElement("hr"));
+
         let subpart_title = document.createElement("h3");
         subpart_title.classList.add("subpart-title");
         subpart_title.innerText = title;
         subpart.appendChild(subpart_title);
-        subpart.appendChild(document.createElement("hr"));
         return subpart;
     }
 
@@ -601,9 +819,11 @@
         }
 
         // add actions column
+        if(delete_actions != false) {
         let th = document.createElement("th");
         th.innerText = "Actions";
         tr.appendChild(th);
+        }
 
 
         thead.appendChild(tr);
@@ -697,7 +917,7 @@
                     if(references[tds[i].classList[0]]) {
                         tds[i].classList.add("reference");
                         tds[i].addEventListener("click", function() {
-                            references[tds[i].classList[0]](select.value);
+                            //references[tds[i].classList[0]](select.value);
                         });
                     }
 
@@ -781,7 +1001,7 @@
                 }
                 
                 let creation_success = await createNew.function(false, data);
-                if(creation_success.success) {
+                if(creation_success != false) {
                     let newData = creation_success; 
                     // add new line with the selected role
                     let new_tr = document.createElement("tr");
@@ -793,7 +1013,6 @@
                         if(references[column]) {
                             td.classList.add("reference");
                             td.addEventListener("click", function() {
-                                
                                 references[column](newData.id);
                             });
                         }

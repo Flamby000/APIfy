@@ -48,7 +48,6 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 		try {logStatement.setString(5, exchange.getRequestMethod());} catch (Exception e) {}
 
-
 		
 		if (!request.actionName().equals("SetupDB")) {
 
@@ -113,9 +112,12 @@ public record RequestHandler(Application app) implements HttpHandler {
 				//return;
 			//}
 		} else {
-
+			try {
 			params = request.getParameters(response, requestMethod, action);
 			if (params == null) return;
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		User user = null;
@@ -144,7 +146,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 				
 			}
 		}
-		
+
 
 
 		// Execute the action
@@ -161,7 +163,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 					action.patch(app, response, db, request.patchFields(), request.id());
 					break;
 				case Method.DELETE :
-					action.delete(app, response, db, params, request.id());
+					action.delete(app, response, db, request.deleteFields(), request.id());
 				default :
 					response.appendError("method_not_supported", "The server doesn't support " + requestMethod + " method.");
 					response.send(400);

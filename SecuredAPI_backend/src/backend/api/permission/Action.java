@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONObject;
+
 import backend.api.interfaces.Application;
 
 public class Action {
@@ -65,6 +67,76 @@ public class Action {
 	}
 	
 
+	public List<Role> roles(Connection db, Application app) throws SQLException {
+		try {
+			var statement = db.prepareStatement(String.format("SELECT * FROM %saction_role NATURAL JOIN %srole WHERE action_id = ?;", app.prefix(), app.prefix()));
+			statement.setString(1, action_id);
+			var result = statement.executeQuery();
+			var roles = new ArrayList<Role>();
+			while(result.next()) {
+				roles.add(new Role(db, app,
+					result.getInt("role_id"),
+					result.getString("role_name"),
+					result.getString("role_description"),
+					result.getDate("role_created_at")
+				));
+			}
+			return roles;
+		} catch(SQLException e) {
+			return List.of();
+		}
+	}
+
+	public List<SessionRequest> history(Connection db, Application app) {
+
+		// create SessionRequest list from %drequest
+		try {
+			var statement = db.prepareStatement(String.format("SELECT * FROM %srequest WHERE action_id = ?;", app.prefix()));
+			statement.setString(1, action_id);
+			var result = statement.executeQuery();
+			var requests = new ArrayList<SessionRequest>();
+			while(result.next()) {
+				requests.add(new SessionRequest(
+					db,
+					app,
+					result.getInt("request_id"),
+					result.getString("session_id"),
+					result.getString("action_id"),
+					result.getInt("code"),
+					result.getBoolean("success"),
+					result.getString("method"),
+					result.getString("in_parameters"),
+					result.getString("out_parameters"),
+					result.getDate("request_created_at")
+				));
+			}
+			return requests;
+		} catch(SQLException e) {
+			e.printStackTrace();
+			return List.of();
+		}
+		
+	}
+
+	public static Action action(Connection db, Application app, String id) {
+		try {
+			var statement = db.prepareStatement(String.format("SELECT * FROM %saction NATURAL JOIN %slibrary WHERE action_id = ?;", app.prefix(), app.prefix()));
+			statement.setString(1, id);
+			var result = statement.executeQuery();
+			if(result.next()) {
+				return new Action(
+					result.getString("action_id"),
+					result.getString("library_id"),
+					result.getString("module_id"),
+					result.getString("action_description")
+				);
+			} else {
+				return null;
+			}
+		} catch(SQLException e) {
+			return null;
+		}
+	}
 
 
 

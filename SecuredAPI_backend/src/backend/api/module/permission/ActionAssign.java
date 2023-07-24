@@ -22,6 +22,10 @@ public record ActionAssign() implements Action {
 		);
 	}
 	
+	@Override
+	public List<String> deleteFields() {
+		return List.of("role_id", "action_id");
+	}
 	
 	@Override
 	public List<Parameter<?>> parameters() {
@@ -44,7 +48,7 @@ public record ActionAssign() implements Action {
             res.send(200);
         } catch(Exception e) {
             res.err("assign_action_failed", e.getMessage());
-            res.send(500);
+            res.send(409);
         }
     }
 
