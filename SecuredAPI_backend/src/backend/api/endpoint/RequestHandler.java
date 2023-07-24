@@ -113,7 +113,8 @@ public record RequestHandler(Application app) implements HttpHandler {
 			//}
 		} else {
 			try {
-			params = request.getParameters(response, requestMethod, action);
+				if(requestMethod.equals(Method.DELETE)) params = request.getParameters(response, requestMethod, action, action.deleteParameters());
+				else params = request.getParameters(response, requestMethod, action, action.parameters());
 			if (params == null) return;
 			} catch(Exception e) {
 				e.printStackTrace();
@@ -163,7 +164,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 					action.patch(app, response, db, request.patchFields(), request.id());
 					break;
 				case Method.DELETE :
-					action.delete(app, response, db, request.deleteFields(), request.id());
+					action.delete(app, response, db, params, request.id());
 				default :
 					response.appendError("method_not_supported", "The server doesn't support " + requestMethod + " method.");
 					response.send(400);

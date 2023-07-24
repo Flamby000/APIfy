@@ -26,7 +26,8 @@ public record Permission() implements Library {
 			new User(),
 			new Role(),
 			new RoleAssign(),
-			new ActionAssign()
+			new ActionAssign(),
+			new Session()
 		);		
 
 	}

@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.util.Map;
 
-import org.json.JSONObject;
 
 import backend.api.interfaces.Application;
 

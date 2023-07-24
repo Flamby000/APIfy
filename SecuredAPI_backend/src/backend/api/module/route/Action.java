@@ -65,9 +65,10 @@ public record Action() implements backend.api.interfaces.Action {
 					res.addArray("parameters", actionInst.parameters().stream().map(param -> param.toMap()).toList());
 
 					res.addArray("patchable_fields", actionInst.patchableFields());
+					res.addArray("delete_parameters", actionInst.deleteParameters().stream().map(param -> param.toMap()).toList());
 					
 					// Get history of this action was called
-					var history = action.history(db, app);
+					var history = backend.api.permission.Action.history(db, app, action.name());
 					res.addArray("history", history.stream().map(h -> h.toMap()).toList());
 					
 					res.send(200);
@@ -89,7 +90,8 @@ public record Action() implements backend.api.interfaces.Action {
 		
 
 	}
-	
+
+
 
 	
 }

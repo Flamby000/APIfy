@@ -127,8 +127,8 @@ public record Role() implements Action{
 			backend.api.permission.Role.delete(db, app, id);
 			res.send(200);
 		} catch (Exception e) {
-			res.err("error", e.getMessage());
-			res.send(500);
+			res.err("not_found", "Role " + id + "not found");
+			res.send(404);
 		}
 
 		return;

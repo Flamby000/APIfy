@@ -23,8 +23,11 @@ public record ActionAssign() implements Action {
 	}
 	
 	@Override
-	public List<String> deleteFields() {
-		return List.of("role_id", "action_id");
+	public List<Parameter<?>> deleteParameters() {
+		return List.of(
+			new Parameter<>(Integer.class, "role_id", "The role assigned action", null, true),
+			new Parameter<>(String.class, "action_id", "The action to assign", null, true)
+		);
 	}
 	
 	@Override

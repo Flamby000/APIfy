@@ -40,13 +40,14 @@
             <div id="categories" class="col-2 hide">
                 <ul>
                     <li class="row"><h3>Users</h3></li>
-                    <li class="row"><h3>Permissions</h3> </li>
-                    <li class="row"><h3>Logs</h3></li>
-                    <li class="row"><h3>API Rest</h3></li>
-                    <li class="row"><h3>Statistiques</h3> </li>
+                    <li class="row"><h3>Roles</h3> </li>
+                    <li class="row"><h3>Sessions</h3></li>
+                    <li class="row"><h3>Permissions</h3></li>
+                    <li class="row"><h3>Statistics</h3> </li>
                 </ul>
             </div>
 
+  
             <!-- Navigation history -->
             <div id="nav-history" class="hide">
                 <a href="#">Home</a> > <a href="#">Users</a> > <a href="#">Create</a>
@@ -114,7 +115,27 @@
     async function createAPIRestCategory() {
         let category_api = document.createElement("div");
 
-        let response = await request("Core", "Route", "Module", id = false, method = "GET");
+        let response = await request("Core", "Route", "Action", id = false, method = "GET");
+        // console.log(response);
+
+        category_api.appendChild(createSubPart("Actions list"));
+        category_api.appendChild(createTable(response.data.actions,
+            { 
+                action_id : "Action",
+                library_id : "Library",
+                module_id : "Module",
+                action_description : "Description"
+            },
+            false,
+            {
+                action_id : permissionDetails
+            },
+            false,
+            false
+        ));
+
+
+        return category_api;
     }
 
     /** ROLE CATEGORY PART **/
@@ -162,10 +183,50 @@
     
     /** SESSION DETAILS **/
     async function sessionDetails(id, lineElement) {
-        console.log("SESSION DETAILS : " + id);
-        // let response = await request("Core", "Permission", "Session", id, "GET");
-        // if(!response.success) promptError(response);
-        // return response.success ? response.data.session : false;
+        let response = await request("Core", "Permission", "Session", id, "GET");
+        // console.log(response);
+
+        if(response.success) {
+            let session = response.data.session;
+            let session_details = document.createElement("div");
+
+            session_details.appendChild(createDataList(
+                session,
+                {
+                    session_id : "Session ID",
+                    user_id : "User ID",
+                    email : "User mail",
+                    request_count : "Total requests",
+                    last_request_date : "Last update",
+                    session_created_at : "Creation date"
+                },
+                false
+            ));
+
+            let requests_of_session = document.createElement("div");
+            requests_of_session.classList.add("requests-of-session");
+            // requests_of_session.innerHTML = `<h3>Requests of this session</h3>`;
+            session_details.appendChild(createSubPart("Requests of this session"));
+            requests_of_session.appendChild(createTable(response.data.history,
+                {
+                    request_id : "ID",
+                    code : "Code",
+                    method : "Method",
+                    success : "Success",
+                    creation_date : "Creation date"
+                },
+                false,
+                {
+                    request_id : requestDetails
+                }));
+            session_details.appendChild(requests_of_session);
+
+            openModal(`${session.session_id} - ${session.email}`, session_details, session.session_id);
+        } else {
+            promptError(response);
+        }
+
+
     }
 
     /** Request details **/
@@ -210,6 +271,32 @@
         return response.success;
     }
 
+
+    /** LOG CATEGORY **/
+    async function createLogCategory() {
+        let category_log = document.createElement("div");
+
+        let response = await request("Core", "Permission", "Session", id = false, method = "GET");
+        category_log.appendChild(createSubPart("Sessions list"));
+        category_log.appendChild(createTable(response.data.sessions,
+            { 
+                session_id : "Session ID",
+                user_id : "User ID",
+                request_count : "Total requests",
+                last_request_date : "Last update",
+                session_created_at : "Creation date"
+            },
+            false,
+            {
+                session_id : sessionDetails,
+                user_id : userDetails
+            }));
+
+        return category_log;
+
+
+    }
+
     /** ROLE DETAILS PART **/
     async function roleDetails(id) {
         let response = await request("Core", "Permission", "Role", id, "GET");
@@ -231,7 +318,7 @@
                     role_description : editRole
                 }
             ));
-            role_details.appendChild(document.createElement("hr"));;
+            // role_details.appendChild(document.createElement("hr"));;
             
 
             // Get users with this role
@@ -455,13 +542,19 @@
 
             // On select change
             test_form.querySelector("#test-form-method").addEventListener("change", setRequestJsonData);
-            setRequestJsonData({target : test_form.querySelector("#test-form-method")});
-            
-            function setRequestJsonData(e) {
+            setRequestJsonData(false, test_form.querySelector("#test-form-method").value);
+
+            function setRequestJsonData(e, method = false) {
+                
+                if(!method) method = e.target.value;
+                // console.log(method);
                 // if method is GET/OPTIONS/HEAD, hide test-form-json
-                if(["GET", "OPTIONS", "HEAD"].includes(e.target.value)) {
+                if(["GET", "OPTIONS", "HEAD"].includes(method)) {
                     test_form.querySelector("#test-form-json").style.display = "none";
-                } else if (["POST", "PUT", "DELETE"].includes(e.target.value)){
+                    // empty the text area
+                    test_form.querySelector("#test-form-json").value = "";
+
+                } else if (["POST", "PUT"].includes(method)){
                     test_form.querySelector("#test-form-json").style.display = "block";
                     // console.log(response.data.parameters);
                     let data_store = {};
@@ -474,7 +567,7 @@
                     test_form.querySelector("#test-form-json").style.height = "auto";
                     test_form.querySelector("#test-form-json").style.height = (test_form.querySelector("#test-form-json").scrollHeight + 5) + "px";
 
-                } else if (["PATCH"].includes(e.target.value)) {
+                } else if (["PATCH"].includes(method)) {
                     test_form.querySelector("#test-form-json").style.display = "block";
                     console.log(response.data.patchable_fields);
                     let data_store = {};
@@ -486,6 +579,19 @@
                     // Make the text area auto resize height to fit content
                     test_form.querySelector("#test-form-json").style.height = "auto";
                     test_form.querySelector("#test-form-json").style.height = (test_form.querySelector("#test-form-json").scrollHeight + 5) + "px";
+                } else if(["DELETE"].includes(method)) {
+                    test_form.querySelector("#test-form-json").style.display = "block";
+                    // console.log(response.data.parameters);
+                    let data_store = {};
+                    response.data.delete_parameters.forEach(parameter => {
+                        // data_store[parameter.name] = parameter.value =! null ? parameter.value : "DEFAULT"; 
+                        data_store[parameter.name] = parameter.value;
+                    });
+                    test_form.querySelector("#test-form-json").value = JSON.stringify(data_store, null, 4);
+                    // Make the text area auto resize height to fit content
+                    test_form.querySelector("#test-form-json").style.height = "auto";
+                    test_form.querySelector("#test-form-json").style.height = (test_form.querySelector("#test-form-json").scrollHeight + 5) + "px";
+
                 }
             }
 
@@ -495,7 +601,13 @@
                 e.preventDefault();
                 let url = test_form.querySelector("#test-form-path").value;
                 let method = test_form.querySelector("#test-form-method").value;
-                let json = JSON.parse(test_form.querySelector("#test-form-json").value);
+                let json = false;
+                try {
+                    json = JSON.parse(test_form.querySelector("#test-form-json").value);
+                } catch(e) {
+                }
+
+
                 let response = await requestURL(url, method, json); 
                 test_form.querySelector("#test-form-response").value = JSON.stringify(response, null, 4);
                 // Make the text area auto resize height to fit content
@@ -517,6 +629,7 @@
                 code : "Code",
                 method : "Method",
                 success : "Success",
+
                 creation_date : "Creation date"
             },
             false,
@@ -525,7 +638,7 @@
                 request_id : requestDetails
             }));
 
-            
+
             
             openModal(`${action.library_id} / ${action.module_id} / ${action.action_id}`, action_details, action.action_id);
         } else {
@@ -693,6 +806,10 @@
         }
     }
 
+    async function createStatistiquesCategory() {
+        return document.createElement("div");
+    } 
+
     async function setCategory(category) {
         category_content.innerHTML = "";
         /* Remove selected class from all categories */
@@ -710,17 +827,16 @@
 
         if(category.innerText == "Users") {
             category_content.appendChild(await createUserCategory());
-        } else if(category.innerText == "Permissions") {
+        } else if(category.innerText == "Roles") {
             category_content.appendChild(await createPermissionCategory());
-        } else if(category.innerText == "Logs") {
+        } else if(category.innerText == "Sessions") {
             category_content.appendChild(await createLogCategory());
-        } else if(category.innerText == "API Rest") {
+        } else if(category.innerText == "Permissions") {
             category_content.appendChild(await createAPIRestCategory());
-        } else if(category.innerText == "Statistiques") {
+        } else if(category.innerText == "Statistics") {
             category_content.appendChild(await createStatistiquesCategory());
         }
     } 
-
 
     async function setupDBForm() {
         let form = document.getElementById("form-db");

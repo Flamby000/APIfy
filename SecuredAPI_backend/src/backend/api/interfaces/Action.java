@@ -27,7 +27,7 @@ public interface Action {
 		return List.of();
 	}
 	
-	default List<String> deleteFields() {
+	default List<Parameter<?>> deleteParameters() {
 		return List.of();
 	}
 

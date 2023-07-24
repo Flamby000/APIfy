@@ -25,8 +25,11 @@ public record RoleAssign() implements Action {
 	}
 	
 	@Override
-	public List<String> deleteFields() {
-		return List.of("role_id", "user_id");
+	public List<Parameter<?>> deleteParameters() {
+		return List.of(
+			new Parameter<>(Integer.class, "role_id", "The role to delete unassign", null, true),
+			new Parameter<>(Integer.class, "user_id", "The user to remove the role", null, true)
+		);
 	}
 	
 	@Override

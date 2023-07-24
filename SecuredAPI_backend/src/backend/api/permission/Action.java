@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONObject;
 
 import backend.api.interfaces.Application;
 
@@ -87,12 +86,12 @@ public class Action {
 		}
 	}
 
-	public List<SessionRequest> history(Connection db, Application app) {
+	public static List<SessionRequest> history(Connection db, Application app, String actionId) {
 
 		// create SessionRequest list from %drequest
 		try {
 			var statement = db.prepareStatement(String.format("SELECT * FROM %srequest WHERE action_id = ?;", app.prefix()));
-			statement.setString(1, action_id);
+			statement.setString(1, actionId);
 			var result = statement.executeQuery();
 			var requests = new ArrayList<SessionRequest>();
 			while(result.next()) {
@@ -120,7 +119,8 @@ public class Action {
 
 	public static Action action(Connection db, Application app, String id) {
 		try {
-			var statement = db.prepareStatement(String.format("SELECT * FROM %saction NATURAL JOIN %slibrary WHERE action_id = ?;", app.prefix(), app.prefix()));
+			// Order by module, library, action ids
+			var statement = db.prepareStatement(String.format("SELECT * FROM %saction NATURAL JOIN %slibrary  WHERE action_id = ? ORDER BY module_id, library_id, action_id;", app.prefix(), app.prefix()));
 			statement.setString(1, id);
 			var result = statement.executeQuery();
 			if(result.next()) {
@@ -131,6 +131,7 @@ public class Action {
 					result.getString("action_description")
 				);
 			} else {
+				
 				return null;
 			}
 		} catch(SQLException e) {

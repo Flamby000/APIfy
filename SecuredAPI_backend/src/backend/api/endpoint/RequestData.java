@@ -36,7 +36,6 @@ public class RequestData {
 	private String id;
 	private String token;
 	private JSONObject patchFields = null;
-	private JSONObject deleteFields = null;
 	
 	
 	public RequestData(HttpExchange exchange, Application app, PreparedStatement statement, ResponseData response) throws IOException {
@@ -115,26 +114,10 @@ public class RequestData {
 	public String token() { return token;}
 	
 	public JSONObject patchFields() { return patchFields; }
-	public List<Parameter<?>> deleteFields() { 
-		// deleteFields to list of Parameter
-		try {
-			var result = new ArrayList<Parameter<?>>();
-			deleteFields.keySet().forEach((key) -> {
-				result.add(new Parameter<String>(String.class, key, deleteFields.getString(key)));
-			});
-			return result;
 
-		} catch (Exception e) {
-			return List.of();
-		}
-			
-	}
-	
-	
 	@SuppressWarnings("unchecked")
-	public List<Parameter<?>> getParameters(ResponseData response, String method, Action action) throws IOException {
+	public List<Parameter<?>> getParameters(ResponseData response, String method, Action action, List<Parameter<?>> expectedParameters) throws IOException {
 		var result = new ArrayList<Parameter<?>>();
-		var expectedParameters = action.parameters();
 
 		var json = params();
 		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
@@ -143,7 +126,6 @@ public class RequestData {
 		// Check if the JSON is valid
 		
 		if(json == null || json.isEmpty() ) {
-			if(method.equals(Method.DELETE)) return List.of();
 			response.appendError("parameters_expected", "The action need parameters");
 			response.send(412);
 			return null;
@@ -152,7 +134,6 @@ public class RequestData {
 		try {
 			object = new JSONObject(json);
 		} catch (Exception e) {
-			if(method.equals(Method.DELETE)) return List.of();
 			response.appendError("invalid_json", "The provided JSON is invalid");
 			response.send(412);
 			return null;
@@ -165,7 +146,6 @@ public class RequestData {
 			patchFields = object;
 			var possiblesKeys = action.patchableFields();
 			var notExpected = object.keySet().stream().filter((key) -> possiblesKeys.stream().noneMatch((possibleKey) -> possibleKey.equals(key))).collect(Collectors.toList());
-			System.out.println(notExpected);
 			if(notExpected.size() > 0) {
 				response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
 				response.send(412);
@@ -174,17 +154,7 @@ public class RequestData {
 
 		}
 		
-		if(method.equals(Method.DELETE)) {
-			deleteFields = object;
-			var possiblesKeys = action.deleteFields();
-			var notExpected = object.keySet().stream().filter((key) -> possiblesKeys.stream().noneMatch((possibleKey) -> possibleKey.equals(key))).collect(Collectors.toList());
-			System.out.println(notExpected);
-			if(notExpected.size() > 0) {
-				response.appendError("parameter_not_expected", "The parameter \"" + notExpected.get(0) + "\" is not expected");
-				response.send(412);
-				return null;
-			}
-		}
+		
 		
 		var mustCount = expectedParameters.stream().filter((parameter) -> parameter.must()).count();
 		var nonMustCount =  expectedParameters.stream().filter((parameter) -> !parameter.must()).count();
@@ -203,7 +173,7 @@ public class RequestData {
 
 
 		// Iterate all expected
-		if(!method.equals(Method.PATCH) && !method.equals(Method.DELETE)) {
+		if(!method.equals(Method.PATCH)) {
 			for(var parameter : expectedParameters) {
 	
 				// Check parameter presence
@@ -232,8 +202,9 @@ public class RequestData {
 				}
 				
 				// Check the type of the argument
-				var requestType = object.get(parameter.name()).getClass();
 				
+				var requestType = object.get(parameter.name()).getClass();
+
 				if(requestType.equals(org.json.JSONArray.class)) requestType = List.class;
 				if(requestType.equals(org.json.JSONObject.class)) requestType = Map.class;
 				
@@ -252,7 +223,7 @@ public class RequestData {
 		//  send 400 if there is parameters not expected 
 		//var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
 		
-		if(!method.equals(Method.PATCH) && !method.equals(Method.DELETE)) {
+		if(!method.equals(Method.PATCH)) {
 
 			var notExpected = object.keySet().stream().filter((key) -> expectedParameters.stream().noneMatch((parameter) -> parameter.name().equals(key))).collect(Collectors.toList());
 
