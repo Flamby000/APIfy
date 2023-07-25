@@ -47,6 +47,23 @@ public class Role {
 		return map;
 	}
 
+	public Map<String, Object> toMap(Connection db, Application app, String actionId) {
+		//var map = new HashMap<String, String>();
+		// map.put("role_name", name);
+		// map.put("role_description", description);
+		// map.put("creationDate", creationDate.toString());
+		// map.put("id", String.valueOf(id));
+		// map.put("authorized_methods", Role.authorizedMethods(db, app, id, actionId))
+		
+		return Map.of(
+			"role_name", name,
+			"role_description", description,
+			"creationDate", creationDate.toString(),
+			"id", String.valueOf(id),
+			"authorized_methods", Role.authorizedMethods(db, app, id, actionId)
+		);
+		
+	}
 	public static Role create(Connection db, Application app, String description, String name) throws Exception {
 		try {
 			var statement = db.prepareStatement(String.format("INSERT INTO %srole (role_name, role_description) VALUES (?, ?);", app.prefix()));
@@ -159,6 +176,28 @@ public class Role {
 	public boolean canPerform(Action action) {
 		return false;
 	}
+	
+	
+	public static List<String> authorizedMethods(Connection db, Application app, int roleId, String actionId) {
+		// list of methods in table api_role_permission
+		try {
+			var statement = db.prepareStatement(String.format("SELECT method FROM %srole_permission WHERE role_id = ? AND action_id = ?;", app.prefix()));
+			statement.setInt(1, roleId);
+			statement.setString(2, actionId);
+			var result = statement.executeQuery();
+			var methods = new ArrayList<String>();
+			while(result.next()) {
+				methods.add(result.getString("method"));
+			}
+			result.close();
+			statement.close();
+			return methods;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return List.of();
+		}
+	}
+	
 
 
 	
@@ -181,7 +220,6 @@ public class Role {
 				permissions.add(action);
 			}
 			return permissions;
-
 	}
 
 	

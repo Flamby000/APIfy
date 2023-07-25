@@ -35,8 +35,9 @@ public record Action() implements backend.api.interfaces.Action {
 
 					// Add the role affected by this action
 					var roles = action.roles(db, app);
-					res.addArray("roles", roles.stream().map(role -> role.toMap()).toList());
-
+					res.addArray("roles", roles.stream().map(role -> role.toMap(db, app, action.name())).toList());
+					
+					
 					// module with field name() = action.module()  (stream API)
 					var actionInst = app.modules()
 									.stream()
@@ -61,7 +62,6 @@ public record Action() implements backend.api.interfaces.Action {
 
 					res.addBool("is_guest_action", actionInst.isGuestAction());
 					res.addMap("methods", actionInst.methodsDoc());
-
 					res.addArray("parameters", actionInst.parameters().stream().map(param -> param.toMap()).toList());
 
 					res.addArray("patchable_fields", actionInst.patchableFields());

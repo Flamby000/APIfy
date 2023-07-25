@@ -55,6 +55,8 @@ public class Action {
 		return action.methods();
 	}
 
+
+
 	public Map<String, Object> toMap(Application app) {		
 		return Map.of(
 			"action_id", action_id,
@@ -65,6 +67,18 @@ public class Action {
 		);
 	}
 	
+	public Map<String, Object> toMap(Connection db, Application app, int roleId) {		
+		return Map.of(
+			"action_id", action_id,
+			"action_description", action_description,
+			"library_id", library_id,
+			"module_id", module_id,
+			"methods", methods(app),
+			"authorized_methods", backend.api.permission.Role.authorizedMethods(db, app, roleId, this.name())
+
+		);
+	}
+
 	public static List<Action> actions(Connection db, Application app) throws SQLException {
 		var statement = db.prepareStatement(String.format("SELECT * FROM %saction NATURAL JOIN %slibrary;", app.prefix(), app.prefix()));
 		var result = statement.executeQuery();

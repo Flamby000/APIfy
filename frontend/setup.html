@@ -262,7 +262,7 @@
                 {
                     request_id : "ID",
                     code : "Code",
-                    method : "Method",
+                    method : "Methods",
                     success : "Success",
                     creation_date : "Creation date"
                 },
@@ -412,7 +412,8 @@
                     action_id : "Action",
                     library_id : "Library",
                     module_id : "Module",
-                    action_description : "Description"
+                    action_description : "Description",
+                    methods : "Methods"
                 },
                 {   
                     Unassign : removePermissionFromRole
@@ -507,6 +508,10 @@
 
             let roles_of_action = response.data.roles;
             let roles_of_action_div = document.createElement("div");
+            roles_of_action.base_methods = response.data.action.methods
+            // console.log(roles_of_action);
+            roles_of_action.forEach((role) => role.base_methods = response.data.action.methods);
+                
             // roles_of_action_div.innerHTML = `<h3>Roles with this permission</h3>`;
             action_details.appendChild(createSubPart("Roles with this permission"));
 
@@ -515,6 +520,7 @@
                     id : "Role ID",
                     role_name : "Name",
                     role_description : "Description",
+                    base_methods : "Methods",
                     creationDate : "Creation date"
                 },
                 {   
@@ -971,8 +977,7 @@
         for(let column in columns) {
             let th = document.createElement("th");
             th.innerText = columns[column];
-    
-
+     
             // add sort button on columns
             let sort_button = document.createElement("span");
             sort_button.classList.add("sort-button");
@@ -1009,18 +1014,88 @@
             for(let column in renamed_data[i]) {
                 let td = document.createElement("td");
                 
-                if(references[column]) {
-                   td.classList.add("reference");
-                    td.addEventListener("click", function() {
-                        references[column](renamed_data[i][column]);
-                    });
+                // is its the column with the column name "Methods"
+                if(column == "methods" || column == "base_methods") {
+                    // create a select with all methods
+
+                    // get the authorized_method field of the object data (not from renamed_data)
+                    let authorized_methods = data[i].authorized_methods;
+                    let methods = renamed_data[i][column];
+                    console.log(authorized_methods);
+                    console.log(methods);
+                    // TODO HERE
+                    let content = document.createElement("div");
+                    
+                    function actualizeMethods(methods, content) {
+                        content.innerHTML = "";
+                        methods.forEach(function(method) {
+                            let method_div = document.createElement("div");
+                            method_div.classList.add("method");
+                            method_div.innerText = method;
+                            method_div.classList.add("clickable")
+                            if(authorized_methods.includes(method)) {
+                                method_div.classList.add("authorized");
+                                // On click, call Core, Permission, Authorize, DELETE with parameters role_id, action_id and method
+                                method_div.addEventListener("click", async function() {
+                                    let response = await request("Core", "Permission", "Authorize", false, "DELETE", {
+                                        "role_id" : parseInt(current_modal_id),
+                                        "action_id" : data[i].action_id,
+                                        "method" : method
+                                    });
+                                    if(response.success) {
+                                        // remove the method from the authorized_methods array
+                                        authorized_methods.splice(authorized_methods.indexOf(method), 1);
+                                        actualizeMethods(methods, content);
+                                        return;
+                                    } else {
+                                        promptError(response);
+                                    }
+                                });
+                            } else {
+                                method_div.classList.add("unauthorized");
+                                // On click, call Core, Permission, Authorize, POST with parameters role_id, action_id and method
+                                method_div.addEventListener("click", async function() {
+                                    let response = await request("Core", "Permission", "Authorize", false, "POST", {
+                                        "role_id" : parseInt(current_modal_id),
+                                        "action_id" : data[i].action_id,
+                                        "method" : method
+                                    });
+                                    if(response.success) {
+                                        // add the method to the authorized_methods array
+                                        authorized_methods.push(method);
+                                        actualizeMethods(methods, content);
+                                        return;
+                                    } else {
+                                        promptError(response);
+                                        
+                                    }
+                                });
+                            }
+                            content.appendChild(method_div);
+                        });
+                    }
+                    actualizeMethods(methods, content);
+
+
+
+
+                    td.appendChild(content);
                 } else {
+
+                    if(references[column]) {
+                    td.classList.add("reference");
+                        td.addEventListener("click", function() {
+                            references[column](renamed_data[i][column]);
+                        });
+                    } else {
+                        td.innerText = renamed_data[i][column];
+                    }
+
                     td.innerText = renamed_data[i][column];
                 }
 
 
                 td.classList.add(column);
-                td.innerText = renamed_data[i][column];
                 tr.appendChild(td);
                 
             }

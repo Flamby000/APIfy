@@ -65,11 +65,11 @@ public record Role() implements Action{
 
 
 			try {
-				var permissions =  backend.api.permission.Role.permissions(db, app, id).stream().map(permission -> permission.toMap(app)).collect(Collectors.toList());
-				
-				
+				var permissions =  backend.api.permission.Role.permissions(db, app, id).stream().map(permission -> permission.toMap(db, app, Integer.parseInt(id))).collect(Collectors.toList());
 				res.addArray("permissions", permissions);
+				// res.addArray("authorized_methods", backend.api.permission.Role.authorizedMethods(db, app, id, action.name()));
 				
+
 			} catch (SQLException e) {
 				res.err("permissions_not_found", "Permissions of the role wasnt found :" + e.getMessage());
 				res.send(500);

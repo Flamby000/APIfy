@@ -250,7 +250,7 @@ public record SetupDB() implements Action {
 /*
 CREATE TABLE IF NOT EXISTS api_permission (
 	action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE,
-	method VARCAHR(255)
+	method VARCHAR(255),
 	PRIMARY KEY(action_id, method)
 );
 

@@ -77,7 +77,7 @@ public record Module() implements Action {
 				// 	modules.put(module);
 				// }
 
-				for(int i = 0; i < modulesDB.length(); i++) {
+				for(int i = 0; i < modulesInst.length(); i++) {
 					var moduleDB = modulesDB.getJSONObject(i);
 					var module = modulesInst.toList().stream().filter((obj) -> ((Map<?, ?>)obj).get("module_id").equals(moduleDB.getString("module_id"))).findFirst().orElse(null);
 					if(module == null) {
@@ -149,6 +149,9 @@ public record Module() implements Action {
 		
 		// insert it on database is not already present
 		try {
+			
+			
+			
 			var statement = db.prepareStatement(String.format("SELECT * FROM %smodule WHERE module_id = ?;", app.prefix()));
 			statement.setString(1, id);
 			var result = statement.executeQuery();
@@ -242,6 +245,33 @@ public record Module() implements Action {
 								actionStatement.executeUpdate();
 							} 
 							actionStatement.close();
+							
+							action.methods().forEach((method) -> {
+								try {
+									// check if not exist
+									var methodStatement = db.prepareStatement(String.format("SELECT * FROM %spermission WHERE action_id = ? AND method = ?;", app.prefix()));
+									methodStatement.setString(1, action.name());
+									methodStatement.setString(2, method);
+									var methodResult = methodStatement.executeQuery();
+									if(!methodResult.next()) {
+										methodStatement.close();
+										methodStatement = db.prepareStatement(String.format("INSERT INTO %spermission (action_id, method) VALUES (?, ?);", app.prefix()));
+										methodStatement.setString(1, action.name());
+										methodStatement.setString(2, method);
+										methodStatement.executeUpdate();
+										methodStatement.close();
+
+									}
+									
+
+								}catch (SQLException e) {
+									e.printStackTrace();
+									res.appendError("set_method_failed", e.getMessage());
+									res.send(500);
+									return;
+								}
+							});
+							
 						} catch (SQLException e) {
 							e.printStackTrace();
 							res.appendError("set_action_failed", e.getMessage());
