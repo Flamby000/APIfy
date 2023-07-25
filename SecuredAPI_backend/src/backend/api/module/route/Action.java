@@ -31,7 +31,7 @@ public record Action() implements backend.api.interfaces.Action {
 					res.err("action_not_found", "The action with the given id was not found");
 					res.send(404);
 				} else {
-					res.addMap("action", action.toMap());
+					res.addMap("action", action.toMap(app));
 
 					// Add the role affected by this action
 					var roles = action.roles(db, app);
@@ -80,7 +80,7 @@ public record Action() implements backend.api.interfaces.Action {
 
 		} else {
 			try {
-				res.addArray("actions", backend.api.permission.Action.actions(db, app).stream().map(action -> action.toMap()).toList());
+				res.addArray("actions", backend.api.permission.Action.actions(db, app).stream().map(action -> action.toMap(app)).toList());
 				res.send(200);
 			} catch (SQLException e) {
 				res.err("get_actions_failed", e.getMessage());

@@ -117,13 +117,18 @@
 
         let modules_response = await request("Core", "Route", "Module", false, "GET");
         let modules = modules_response.data.modules;
-        console.log(modules);
+        // console.log(modules_response);
 
         category_api.appendChild(createSubPart("Modules list"));
-        category_api.appendChild(createTable(modules,
+        let modules_table = createTable(modules,
             { 
                 module_id : "Module",
-                module_description : "Description"
+                module_description : "Description",
+                module_author : "Author",
+                module_version : "Version",
+                module_installed_at : "Installation date",
+                module_updated_at : "Last update",
+                is_setup : "Installed"
             },
             false,
             {
@@ -131,7 +136,27 @@
             },
             false,
             false
-        ));
+        );
+        // create (not existing yet) action column in modules_table with a button "UPDATE"
+        let update_column = document.createElement("th");
+        update_column.innerText = "Action";
+        modules_table.querySelector("tr").appendChild(update_column);
+        modules_table.querySelectorAll("tr").forEach(function(line, index) {
+            if(index == 0) return;
+            let update_button = document.createElement("button");
+            update_button.innerText = "UPDATE";
+            update_button.addEventListener("click", async function() {
+                let module_id = line.querySelector("td").innerText;
+                let response = await request("Core", "Route", "Module", module_id, "PATCH");
+                if(!response.success) promptError(response);
+                return response.success;
+            });
+            line.appendChild(update_button);
+        });
+
+        
+
+        category_api.appendChild(modules_table);
 
 
         let response = await request("Core", "Route", "Action", id = false, method = "GET");
@@ -962,9 +987,9 @@
 
         // add actions column
         if(delete_actions != false) {
-        let th = document.createElement("th");
-        th.innerText = "Actions";
-        tr.appendChild(th);
+            let th = document.createElement("th");
+            th.innerText = "Actions";
+            tr.appendChild(th);
         }
 
 
@@ -1001,20 +1026,23 @@
             }
 
             // add actions buttons
-            let td = document.createElement("td");
-            for(let action in delete_actions) {
-                let button = document.createElement("button");
-                button.innerText = action;
-                button.addEventListener("click", async function() {
-                    let id_name = delete_actions[action].id_name ? delete_actions[action].id_name : "id";
-                    if(await delete_actions[action](renamed_data[i][id_name])) {
-                        tr.remove();
-                    }
-                });
-                td.appendChild(button);
-            }
-            tr.appendChild(td);
-            tbody.appendChild(tr);
+            // if(delete_actions != false) {
+
+                let td = document.createElement("td");
+                for(let action in delete_actions) {
+                    let button = document.createElement("button");
+                    button.innerText = action;
+                    button.addEventListener("click", async function() {
+                        let id_name = delete_actions[action].id_name ? delete_actions[action].id_name : "id";
+                        if(await delete_actions[action](renamed_data[i][id_name])) {
+                            tr.remove();
+                        }
+                    });
+                    td.appendChild(button);
+                }
+                if(delete_actions != false) tr.appendChild(td);
+                tbody.appendChild(tr);
+            // }
 
 
         }

@@ -79,7 +79,9 @@ public class ResponseData {
 	public void addArray(String name, List<?> value) {
 		appendResult(new Parameter<>(JSONArray.class, name, new JSONArray(value)));
 	}
-
+	public void addList(String name, List<?> value) {
+		appendResult(new Parameter<>(JSONArray.class, name, new JSONArray(value)));
+	}
 	public void addMap(String name, Map<?, ?> value) {
 		appendResult(new Parameter<>(JSONObject.class, name, new JSONObject(value)));
 	}

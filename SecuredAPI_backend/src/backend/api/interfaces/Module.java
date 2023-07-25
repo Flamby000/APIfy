@@ -1,6 +1,7 @@
 package backend.api.interfaces;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Module {
 	default String name() { return this.getClass().getSimpleName(); }
@@ -17,6 +18,15 @@ public interface Module {
 			.orElse(null);
 	}
 	
+	default Map<String, String> toMap() {
+		return Map.of(
+			"module_id", name(),
+			"module_description", description(),
+			"module_version", version(),
+			"module_author", author(),
+			"module_author_url", url()
+		);
+	}
 	
 	
 	

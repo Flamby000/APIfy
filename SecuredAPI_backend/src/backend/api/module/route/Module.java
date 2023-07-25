@@ -2,6 +2,7 @@ package backend.api.module.route;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -62,21 +63,36 @@ public record Module() implements Action {
 					modulesDB.put(json);
 				}
 
-				var modules = new JSONArray();
-				for(int i = 0; i < modulesInst.length(); i++) {
-					var module = modulesInst.getJSONObject(i);
-					var moduleDB = modulesDB.toList().stream().filter((obj) -> ((Map<?, ?>)obj).get("module_id").equals(module.getString("module_id"))).findFirst().orElse(null);
-					if(moduleDB == null) {
-						module.put("is_setup", false);
+				var modules = new ArrayList<JSONObject>();
+				// for(int i = 0; i < modulesInst.length(); i++) {
+				// 	var module = modulesInst.getJSONObject(i);
+				// 	var moduleDB = modulesDB.toList().stream().filter((obj) -> ((Map<?, ?>)obj).get("module_id").equals(module.getString("module_id"))).findFirst().orElse(null);
+				// 	if(moduleDB == null) {
+				// 		module.put("is_setup", false);
+				// 	} else {
+				// 		module.put("is_setup", true);
+				// 		module.put("module_updated_at", ((Map<?, ?>)moduleDB).get("module_updated_at"));
+				// 		module.put("module_installed_at", ((Map<?, ?>)moduleDB).get("module_installed_at"));
+				// 	}
+				// 	modules.put(module);
+				// }
+
+				for(int i = 0; i < modulesDB.length(); i++) {
+					var moduleDB = modulesDB.getJSONObject(i);
+					var module = modulesInst.toList().stream().filter((obj) -> ((Map<?, ?>)obj).get("module_id").equals(moduleDB.getString("module_id"))).findFirst().orElse(null);
+					if(module == null) {
+						moduleDB.put("is_setup", false);
 					} else {
-						module.put("is_setup", true);
-						module.put("module_updated_at", ((Map<?, ?>)moduleDB).get("module_updated_at"));
-						module.put("module_installed_at", ((Map<?, ?>)moduleDB).get("module_installed_at"));
+						moduleDB.put("is_setup", true);
+						moduleDB.put("module_description", ((Map<?, ?>)module).get("module_description"));
+						moduleDB.put("module_version", ((Map<?, ?>)module).get("module_version"));
+						moduleDB.put("module_author", ((Map<?, ?>)module).get("module_author"));
+						moduleDB.put("module_author_url", ((Map<?, ?>)module).get("module_author_url"));
 					}
-					modules.put(module);
+					modules.add(moduleDB);
 				}
 					
-				res.addJSONObject("modules", new JSONObject().put("modules", modules));
+				res.addList("modules", modules);
 				res.send(200);
 				return;
 			} catch(Exception e) {

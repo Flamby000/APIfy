@@ -246,27 +246,43 @@ public record SetupDB() implements Action {
 			statement.executeUpdate();
 			statement.close();
 			
+			
+/*
+CREATE TABLE IF NOT EXISTS api_permission (
+	action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE,
+	method VARCAHR(255)
+	PRIMARY KEY(action_id, method)
+);
+
+CREATE TABLE IF NOT EXISTS api_role_permission (
+	action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE,
+	method VARCHAR(255),
+	role_id INT(10) REFERENCES role(role_id) ON DELETE CASCADE,
+	PRIMARY KEY(action_id, method, role_id)
+);
+ */
+			
 			// Table permissions
-			/*
+			
 			statement = db.prepareStatement(String.format(
 				"CREATE TABLE IF NOT EXISTS %spermission ("
 			  + "action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE, "
-			  + "method VARCAHR(255)"
+			  + "method VARCHAR(255),"
 			  + "PRIMARY KEY(action_id, method)"
-			  + ";", app.prefix()));
+			  + ");", app.prefix()));
 			statement.executeUpdate();
 			statement.close();
 			
 			statement = db.prepareStatement(String.format(
 					"CREATE TABLE IF NOT EXISTS %srole_permission ("
 				  + "action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE, "
-				  + "method VARCAHR(255),"
+				  + "method VARCHAR(255),"
 				  + "role_id INT(10) REFERENCES role(role_id) ON DELETE CASCADE,"
 				  + "PRIMARY KEY(action_id, method, role_id)"
-				  + ";", app.prefix()));
+				  + ");", app.prefix()));
 				statement.executeUpdate();
 				statement.close();
-			*/
+			
 
 		} catch (SQLException e) {
 			e.printStackTrace();

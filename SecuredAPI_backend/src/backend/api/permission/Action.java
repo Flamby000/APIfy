@@ -39,13 +39,29 @@ public class Action {
 		return module_id;
 	}
 	
+	public List<String> methods(Application app) {
+		var action = app
+		.modules().stream()
+			.filter(m -> m.name().equals(module_id))
+			.findFirst()
+			.orElse(null)
+				.libraries().stream()
+					.filter(l -> l.name().equals(library_id))
+					.findFirst()
+					.orElse(null)
+						.actions().stream().filter(a -> a.name().equals(action_id))
+							.findFirst()
+							.orElse(null);
+		return action.methods();
+	}
 
-	public Map<String, Object> toMap() {
+	public Map<String, Object> toMap(Application app) {		
 		return Map.of(
 			"action_id", action_id,
 			"action_description", action_description,
 			"library_id", library_id,
-			"module_id", module_id
+			"module_id", module_id,
+			"methods", methods(app)
 		);
 	}
 	
@@ -119,6 +135,8 @@ public class Action {
 
 	public static Action action(Connection db, Application app, String id) {
 		try {
+
+
 			// Order by module, library, action ids
 			var statement = db.prepareStatement(String.format("SELECT * FROM %saction NATURAL JOIN %slibrary  WHERE action_id = ? ORDER BY module_id, library_id, action_id;", app.prefix(), app.prefix()));
 			statement.setString(1, id);

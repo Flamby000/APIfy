@@ -49,6 +49,7 @@ public record Role() implements Action{
 
 		if(id == RequestData.INVALID) {
 			res.addArray("roles", backend.api.permission.Role.roles(db, app).stream().map(role -> role.toMap()).collect(Collectors.toList()));
+
 			res.send(200);
 			return;
 		} else {
@@ -61,17 +62,19 @@ public record Role() implements Action{
 			
 			res.addArray("users", role.users().stream().map(user -> user.toMap()).collect(Collectors.toList()));
 			
-			
+
+
 			try {
-				var permissions =  backend.api.permission.Role.permissions(db, app, id);
-				res.addArray("permissions", permissions.stream().map(permission -> permission.toMap()).collect(Collectors.toList()));
+				var permissions =  backend.api.permission.Role.permissions(db, app, id).stream().map(permission -> permission.toMap(app)).collect(Collectors.toList());
+				
+				
+				res.addArray("permissions", permissions);
 				
 			} catch (SQLException e) {
 				res.err("permissions_not_found", "Permissions of the role wasnt found :" + e.getMessage());
 				res.send(500);
 			}
 
-			// Add permissions
 			
 			
 			res.send(200);
