@@ -89,7 +89,7 @@
             });
         });
 
-        let update_module = await request("Core", "Route", "Module", "Core", "PATCH");
+        // let update_module = await request("Core", "Route", "Module", "Core", "PATCH");
 
         let role_response = await request("Core", "Permission", "Role", false, "GET");
         roles = role_response.data.roles;
@@ -115,6 +115,25 @@
     async function createAPIRestCategory() {
         let category_api = document.createElement("div");
 
+        let modules_response = await request("Core", "Route", "Module", false, "GET");
+        let modules = modules_response.data.modules;
+        console.log(modules);
+
+        category_api.appendChild(createSubPart("Modules list"));
+        category_api.appendChild(createTable(modules,
+            { 
+                module_id : "Module",
+                module_description : "Description"
+            },
+            false,
+            {
+                module_id : modulePatch
+            },
+            false,
+            false
+        ));
+
+
         let response = await request("Core", "Route", "Action", id = false, method = "GET");
         // console.log(response);
 
@@ -136,6 +155,13 @@
 
 
         return category_api;
+    }
+
+
+    async function modulePatch(id) {
+        let response = await request("Core", "Route", "Module", id, "PATCH");
+        if(!response.success) promptError(response);
+        return response.success;
     }
 
     /** ROLE CATEGORY PART **/

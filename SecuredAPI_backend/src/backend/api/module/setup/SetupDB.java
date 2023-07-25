@@ -245,7 +245,28 @@ public record SetupDB() implements Action {
 			  );
 			statement.executeUpdate();
 			statement.close();
-
+			
+			// Table permissions
+			/*
+			statement = db.prepareStatement(String.format(
+				"CREATE TABLE IF NOT EXISTS %spermission ("
+			  + "action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE, "
+			  + "method VARCAHR(255)"
+			  + "PRIMARY KEY(action_id, method)"
+			  + ";", app.prefix()));
+			statement.executeUpdate();
+			statement.close();
+			
+			statement = db.prepareStatement(String.format(
+					"CREATE TABLE IF NOT EXISTS %srole_permission ("
+				  + "action_id VARCHAR(255) REFERENCES action(action_id) ON DELETE CASCADE, "
+				  + "method VARCAHR(255),"
+				  + "role_id INT(10) REFERENCES role(role_id) ON DELETE CASCADE,"
+				  + "PRIMARY KEY(action_id, method, role_id)"
+				  + ";", app.prefix()));
+				statement.executeUpdate();
+				statement.close();
+			*/
 
 		} catch (SQLException e) {
 			e.printStackTrace();

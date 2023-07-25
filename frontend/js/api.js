@@ -8,7 +8,10 @@ function token() {
     return document.cookie.split('=')[1];
 } 
 
-function setToken(token, expiration) {
+function setToken(expiration) {
+    // generate token with 4 randoms word of 8 alpha-numerics caracters separated by '-'
+    let token = Math.random().toString(36).substring(7) + '-' + Math.random().toString(36).substring(7) + '-' + Math.random().toString(36).substring(7) + '-' + Math.random().toString(36).substring(7);
+
     let date = new Date();
     date.setTime(date.getTime() + (expiration * 24 * 60 * 60 * 1000));
     let expires = "expires="+date.toUTCString();
@@ -19,7 +22,7 @@ function setToken(token, expiration) {
 async function requestURL(url, method = "POST", params = false) {
     // console.log(url, method, params);
     if(params != false) params = JSON.stringify(params);
-    if(token() == undefined) setToken(Math.random().toString(36).substring(7), 1);
+    if(token() == undefined) setToken(1);
     let response = false;
     try {
         let result = $.ajax(`${url}`, 
