@@ -1,8 +1,0 @@
-{
-	"db_hostname":"localhost",
-	"db_name":"SecuredAPI",
-	"db_user":"SecuredAPI",
-	"db_password":"SecuredAPI",
-	"table_prefix":"api_",
-	"api_port" : 4090
-}

@@ -1,0 +1,102 @@
+package backend.api.app.core.permission;
+
+import java.sql.Connection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.json.JSONObject;
+
+import backend.api.app.Action;
+import backend.api.app.Application;
+import backend.api.app.Method;
+import backend.api.app.Parameter;
+import backend.api.app.RequestData;
+import backend.api.app.ResponseData;
+
+public record User() implements Action {
+	
+	@Override
+	public String description() {return "Manipulate user data";}
+	
+	
+	@Override
+	public List<Parameter<?>> parameters() {
+		return List.of();
+	}
+	
+	@Override
+	public List<String> patchableFields() {
+		return List.of("username", "email", "first_name", "last_name", "phone");
+	}	
+
+	@Override
+	public Map<String, String> methodsDoc() {
+		return Map.of(
+			Method.GET, "Get the user data",
+			Method.DELETE, "Delete the target user",
+			Method.PATCH, "Update the user data"
+		);
+	}
+	
+	
+	@Override
+	public void get(Application app, ResponseData res, Connection db, String id, String token){
+		if(id == RequestData.INVALID) {
+			res.addArray("users", backend.api.app.utils.User.users(db, app).stream().map(user -> user.toMap()).collect(Collectors.toList()));
+			res.send(200);
+			return;
+			
+		} else {
+			/* Search "id" user */
+			if(RequestData.requireId(res, id)) return;
+			var user = backend.api.app.utils.User.user(db, app, Integer.valueOf(id));
+			if(user != null) {
+				res.addMap("user", user.toMap());
+				res.addArray("roles", user.roles().stream().map(role -> role.toMap()).collect(Collectors.toList()));
+				res.send(200);
+				return;
+			} else {
+				res.appendError("not_found", "The user wasn't found");
+				res.send(404);
+				return;
+			}
+		}
+		
+	}
+	
+	
+	@Override
+	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id, String token) {
+		if(RequestData.requireId(res, id)) return;
+		for(var key : patchFields.keySet()) {
+			var value = patchFields.get(key);
+			try {
+				backend.api.app.utils.User.updateField(db, app, id, key, value.toString());
+			} catch (Exception e) {
+				res.err("field_not_valid", "The field " + key + " cannot be updated ! " + e.getMessage());
+				res.send(406);
+				return;
+			}
+		}
+		
+		res.addString("message", "User updated");
+		res.send(200);
+	};
+
+	@Override
+	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id, String token){
+		if(backend.api.app.utils.User.delete(db, app, id)) {
+			res.addString("message", "User deleted");
+			res.send(200);
+			return;
+		} else {
+			res.appendError("not_found", "The user to delete wasn't found");
+			res.send(404);
+			return;
+		}				
+			
+	};
+	
+
+}
