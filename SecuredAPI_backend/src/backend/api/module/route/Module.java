@@ -29,7 +29,7 @@ public record Module() implements Action {
 	
 	
 	@Override
-	public void get(Application app, ResponseData res, Connection db, String id){
+	public void get(Application app, ResponseData res, Connection db, String id, String token){
 		if(id.equals(RequestData.INVALID)) {
 			// Get all modules
 			try {
@@ -133,7 +133,7 @@ public record Module() implements Action {
 	
 	
 	@Override
-	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id) {
+	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id, String token) {
 
 		RequestData.requireId(res, id);
 		if(res.isClosed()) return;

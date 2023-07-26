@@ -27,7 +27,7 @@ public record isSetup() implements Action {
 	public boolean isGuestAction() { return true; }
 	
 	@Override
-	public void get(Application app, ResponseData res, Connection db, String id){
+	public void get(Application app, ResponseData res, Connection db, String id, String token){
 		if(SetupDB.isDBSetUp(db, app)) {
 			res.addString("message", "The database is correctly set up");
 			res.send(200);

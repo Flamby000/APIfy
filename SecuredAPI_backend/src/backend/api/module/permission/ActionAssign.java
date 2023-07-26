@@ -39,7 +39,7 @@ public record ActionAssign() implements Action {
 	}
 
     @Override
-	public void post(Application app, ResponseData res, Connection db, List<Parameter<?>> params) {
+	public void post(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String token) {
         var roleId = (Integer) Parameter.find(params, "role_id").value();
         var actionId = (String) Parameter.find(params, "action_id").value();
         
@@ -56,7 +56,7 @@ public record ActionAssign() implements Action {
     }
 
     @Override
-	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id){
+	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id, String token){
         var roleId = (Integer) Parameter.find(params, "role_id").value();
         var actionId = (String) Parameter.find(params, "action_id").value();
         

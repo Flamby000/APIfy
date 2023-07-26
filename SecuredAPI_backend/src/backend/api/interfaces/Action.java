@@ -31,29 +31,26 @@ public interface Action {
 		return List.of();
 	}
 
-
 	
 	
-	//void execute(Application app, ResponseData response, List<Parameter<?>> params, Connection db, String id, String method, JSONObject patchFields) throws IOException;
 	
-	
-	default void post(Application app, ResponseData response, Connection db, List<Parameter<?>> params) {
+	default void post(Application app, ResponseData response, Connection db, List<Parameter<?>> params, String token) {
 		response.err("action_doesnt_support_method", "The action " + name() + " dosn't support POST method.");
 		response.send(400);
 	};
-	default void patch(Application app, ResponseData response, Connection db, JSONObject patchFields, String id) {
+	default void patch(Application app, ResponseData response, Connection db, JSONObject patchFields, String id, String token) {
 		response.err("action_doesnt_support_method", "The action " + name() + " dosn't support PATCH method.");
 		response.send(400);
 	};
-	default void get(Application app, ResponseData response, Connection db, String id){
+	default void get(Application app, ResponseData response, Connection db, String id, String token){
 		response.err("action_doesnt_support_method", "The action " + name() + " dosn't support GET method.");
 		response.send(400);
 	};
-	default void delete(Application app, ResponseData response, Connection db, List<Parameter<?>> deleteFields, String id) {
+	default void delete(Application app, ResponseData response, Connection db, List<Parameter<?>> deleteFields, String id, String token) {
 		response.err("action_doesnt_support_method", "The action " + name() + " dosn't support DELETE method.");
 		response.send(400);
 	};
-	default void put(Application app, ResponseData response, Connection db, List<Parameter<?>> params){
+	default void put(Application app, ResponseData response, Connection db, List<Parameter<?>> params, String token){
 		response.err("action_doesnt_support_method", "The action " + name() + " dosn't support PUT method.");
 		response.send(400);
 	};

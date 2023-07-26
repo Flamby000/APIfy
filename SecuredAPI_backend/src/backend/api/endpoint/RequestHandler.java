@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Objects;
 
-
 import com.sun.net.httpserver.HttpHandler;
 
 import backend.api.interfaces.Application;
@@ -120,6 +119,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 				e.printStackTrace();
 			}
 		}
+		//System.out.println(params.stream().map((parameter) -> parameter.name() + " : " + parameter.type().getCanonicalName()).collect(Collectors.joining(", ")));
 
 		User user = null;
 
@@ -151,20 +151,21 @@ public record RequestHandler(Application app) implements HttpHandler {
 
 
 		// Execute the action
+
 		try {
 			var db = app.db();
 			switch(requestMethod) {
 				case Method.POST :
-					action.post(app, response, db, params);
+					action.post(app, response, db, params, request.token());
 					break;
 				case Method.GET :
-					action.get(app, response, db, request.id());
+					action.get(app, response, db, request.id(), request.token());
 					break;
 				case Method.PATCH :
-					action.patch(app, response, db, request.patchFields(), request.id());
+					action.patch(app, response, db, request.patchFields(), request.id(), request.token());
 					break;
 				case Method.DELETE :
-					action.delete(app, response, db, params, request.id());
+					action.delete(app, response, db, params, request.id(), request.token());
 				default :
 					response.appendError("method_not_supported", "The server doesn't support " + requestMethod + " method.");
 					response.send(400);
@@ -177,6 +178,7 @@ public record RequestHandler(Application app) implements HttpHandler {
 			response.appendError("unhandled_error",
 					"Your \"" + exchange.getRequestMethod() + "\" request raise an error : " + e.getMessage());
 			response.send(500);
+			return;
 		}
 
 		if (response.isClosed())

@@ -32,6 +32,9 @@ public class ResponseData {
 	private final Application app;
 	private final Connection db;
 	
+	
+	
+	
 	public ResponseData(HttpExchange exchange, Application app, PreparedStatement statement, Connection db) {
 		Objects.requireNonNull(exchange);
 		Objects.requireNonNull(exchange);
@@ -148,5 +151,10 @@ public class ResponseData {
 
 	
 	public boolean isClosed() { return over; }
+
+		
+	
+	
+	
 	
 }

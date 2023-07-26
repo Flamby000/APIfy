@@ -1,6 +1,8 @@
 package backend.api.interfaces;
 
 import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -16,14 +18,18 @@ public class Application {
 	// constante DEBUG ON
 	
 	
-	
 	public Application() {
 		connectionPool = new ConnectionPool();
 		modules = List.of(new Core());
 	}
 
+	
+	public void addModule(Module module) {
+		modules.add(module);
+	}
+	
 	public List<Module> modules() {
-		return modules;
+		return List.copyOf(modules);
 	}
 
 	public String name() {
@@ -104,5 +110,27 @@ public class Application {
 	public Module getModule(String name) {
 		return modules.stream().filter(module -> module.name().equals(name)).findFirst().orElse(null);
 	}
+
+
+	public String encrypt(String input) throws NoSuchAlgorithmException {
+		// Encrypt SHA-256
+		var sha256Digest  = java.security.MessageDigest.getInstance("SHA-256");
+		byte[] hash = sha256Digest.digest(input.getBytes(StandardCharsets.UTF_8));
+
+		// Convert byte array into signum representation
+
+        // Convert the byte array to a hexadecimal string representation
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+	}
+
+
 
 }

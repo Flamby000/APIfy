@@ -22,7 +22,8 @@ public record Action() implements backend.api.interfaces.Action {
 		);
 	}
 	
-	public void get(Application app, ResponseData res, Connection db, String id) {
+	@Override
+	public void get(Application app, ResponseData res, Connection db, String id, String token) {
 		if(!id.equals(RequestData.INVALID)) {
 			try {
 				var action = backend.api.permission.Action.action(db, app, id);

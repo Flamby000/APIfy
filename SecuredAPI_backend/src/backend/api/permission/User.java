@@ -243,9 +243,9 @@ public class User {
     	try {
 			var statement = db.prepareStatement(String.format(
 					"SELECT action_id "
-				  + "FROM %suser NATURAL JOIN %suser_role NATURAL JOIN %saction_role "
+				  + "FROM %suser NATURAL JOIN %suser_role NATURAL JOIN %saction_role NATURAL JOIN %srole_permission "
 				  + "WHERE user_id = ? AND action_id = ?;"
-				  , app.prefix(), app.prefix(), app.prefix()));
+				  , app.prefix(), app.prefix(), app.prefix(), app.prefix()));
             statement.setInt(1, id);
             statement.setString(2, action.name());
             var result = statement.executeQuery();

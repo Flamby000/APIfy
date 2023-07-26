@@ -45,7 +45,7 @@ public record Role() implements Action{
 	
 	
 	@Override
-	public void get(Application app, ResponseData res, Connection db, String id){
+	public void get(Application app, ResponseData res, Connection db, String id, String token){
 
 		if(id == RequestData.INVALID) {
 			res.addArray("roles", backend.api.permission.Role.roles(db, app).stream().map(role -> role.toMap()).collect(Collectors.toList()));
@@ -84,7 +84,7 @@ public record Role() implements Action{
 	
 	
 	@Override
-	public void post(Application app, ResponseData res, Connection db, List<Parameter<?>> params) {
+	public void post(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String token) {
 		var roleDescription = (String) Parameter.find(params, "role_description").value();
 		var roleName = (String) Parameter.find(params, "role_name").value();
 		
@@ -103,7 +103,7 @@ public record Role() implements Action{
 
 
 	@Override
-	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id) {
+	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id, String token) {
 		
 		if(RequestData.requireId(res, id)) return;
 		for(var key : patchFields.keySet()) {
@@ -123,7 +123,7 @@ public record Role() implements Action{
 	};
 	
 	@Override
-	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id){
+	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id, String token){
 		if(RequestData.requireId(res, id)) return;
 
 		try {

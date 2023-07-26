@@ -25,7 +25,7 @@ public record Session() implements Action {
 	public String description() {return "Get the session data";}
 
     @Override
-    public void get(Application app, ResponseData res, Connection db, String id) {
+    public void get(Application app, ResponseData res, Connection db, String id, String token) {
         if(!id.equals(RequestData.INVALID)) {    
             try {
                 // Get the session data from %session table

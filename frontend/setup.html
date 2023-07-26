@@ -89,18 +89,23 @@
             });
         });
 
-        // let update_module = await request("Core", "Route", "Module", "Core", "PATCH");
+        // let update_module = await APIManager.request("Core", "Route", "Module", "Core", "PATCH");
+        // console.log(APIManager.token());
+        // console.log(await APIManager.register("kehwos@gmail.com", "kehwos", "Azerty1234", "Azerty1234", "Jean", "Dupont"));
+        // console.log(APIManager.token());
+        // console.log(await APIManager.login("kehwos@gmail.com", "Azerty1234"));
+        // console.log(APIManager.token());
+        // console.log(APIManager.logout());
+        // console.log(APIManager.token());
 
-        let role_response = await request("Core", "Permission", "Role", false, "GET");
+        let role_response = await APIManager.request("Core", "Permission", "Role", false, "GET");
         roles = role_response.data.roles;
 
-        let user_response = await request("Core", "Permission", "User", false, "GET");
+        let user_response = await APIManager.request("Core", "Permission", "User", false, "GET");
         users = user_response.data.users;
 
-        let action_response = await request("Core", "Route", "Action", false, "GET");
+        let action_response = await APIManager.request("Core", "Route", "Action", false, "GET");
         actions = action_response.data.actions;
-
-        
 
     }
 
@@ -115,7 +120,7 @@
     async function createAPIRestCategory() {
         let category_api = document.createElement("div");
 
-        let modules_response = await request("Core", "Route", "Module", false, "GET");
+        let modules_response = await APIManager.request("Core", "Route", "Module", false, "GET");
         let modules = modules_response.data.modules;
         // console.log(modules_response);
 
@@ -147,7 +152,7 @@
             update_button.innerText = "UPDATE";
             update_button.addEventListener("click", async function() {
                 let module_id = line.querySelector("td").innerText;
-                let response = await request("Core", "Route", "Module", module_id, "PATCH");
+                let response = await APIManager.request("Core", "Route", "Module", module_id, "PATCH");
                 if(!response.success) promptError(response);
                 return response.success;
             });
@@ -159,7 +164,7 @@
         category_api.appendChild(modules_table);
 
 
-        let response = await request("Core", "Route", "Action", id = false, method = "GET");
+        let response = await APIManager.request("Core", "Route", "Action", id = false, method = "GET");
         // console.log(response);
 
         category_api.appendChild(createSubPart("Actions list"));
@@ -184,7 +189,7 @@
 
 
     async function modulePatch(id) {
-        let response = await request("Core", "Route", "Module", id, "PATCH");
+        let response = await APIManager.request("Core", "Route", "Module", id, "PATCH");
         if(!response.success) promptError(response);
         return response.success;
     }
@@ -193,7 +198,7 @@
     async function createPermissionCategory() {
         let category_permission = document.createElement("div");
 
-        let response = await request("Core", "Permission", "Role", id = false, method = "GET");
+        let response = await APIManager.request("Core", "Permission", "Role", id = false, method = "GET");
         category_permission.appendChild(createSubPart("Roles list"));
         category_permission.appendChild(createTable(response.data.roles,
             { 
@@ -221,20 +226,20 @@
     }
 
     async function deleteRole(id, lineElement) {
-        let response = await request("Core", "Permission", "Role", id, "DELETE");
+        let response = await APIManager.request("Core", "Permission", "Role", id, "DELETE");
         if(!response.success) promptError(response);
         return response.success;
     }
 
     async function createRole(id, data) {
-        let response = await request("Core", "Permission", "Role", false, "POST", data);
+        let response = await APIManager.request("Core", "Permission", "Role", false, "POST", data);
         if(!response.success) promptError(response);
         return response.success ? response.data.role : false;
     }
     
     /** SESSION DETAILS **/
     async function sessionDetails(id, lineElement) {
-        let response = await request("Core", "Permission", "Session", id, "GET");
+        let response = await APIManager.request("Core", "Permission", "Session", id, "GET");
         // console.log(response);
 
         if(response.success) {
@@ -283,7 +288,7 @@
     /** Request details **/
     async function requestDetails(id, lineElement) {
         console.log("REQUEST DETAILS : " + id);
-        // let response = await request("Core", "Permission", "Request", id, "GET");
+        // let response = await APIManager.request("Core", "Permission", "Request", id, "GET");
         // if(!response.success) promptError(response);
         // return response.success ? response.data.request : false;
     }
@@ -292,7 +297,7 @@
     async function createUserCategory() {
         let category_user = document.createElement("div");
 
-        let response = await request("Core", "Permission", "User", id = false, method = "GET");
+        let response = await APIManager.request("Core", "Permission", "User", id = false, method = "GET");
         category_user.appendChild(createSubPart("Users list"));
         
         category_user.appendChild(createTable(response.data.users,
@@ -317,7 +322,7 @@
     }
 
     async function deleteUser(id, lineElement) {
-        let response = await request("Core", "Permission", "User", id, "DELETE");
+        let response = await APIManager.request("Core", "Permission", "User", id, "DELETE");
         if(!response.success) promptError(response);
         return response.success;
     }
@@ -327,7 +332,7 @@
     async function createLogCategory() {
         let category_log = document.createElement("div");
 
-        let response = await request("Core", "Permission", "Session", id = false, method = "GET");
+        let response = await APIManager.request("Core", "Permission", "Session", id = false, method = "GET");
         category_log.appendChild(createSubPart("Sessions list"));
         category_log.appendChild(createTable(response.data.sessions,
             { 
@@ -350,7 +355,7 @@
 
     /** ROLE DETAILS PART **/
     async function roleDetails(id) {
-        let response = await request("Core", "Permission", "Role", id, "GET");
+        let response = await APIManager.request("Core", "Permission", "Role", id, "GET");
         if(response.success) {
 
             let role = response.data.role;
@@ -416,8 +421,8 @@
                     methods : "Methods"
                 },
                 {   
-                    Unassign : removePermissionFromRole
-                    // id_name : "action_id"
+                    Unassign : removePermissionFromRole,
+                    id_name : "action_id"
                 },
                 {
                     action_id : permissionDetails
@@ -441,16 +446,17 @@
     }
 
     async function removePermissionFromRole(id, lineElement) {
-        let response = await request("Core", "Permission", "ActionAssign", false, "DELETE", {
+        let response = await APIManager.request("Core", "Permission", "ActionAssign", false, "DELETE", {
             "role_id" : parseInt(current_modal_id),
             "action_id" : id
         });
+
         if(!response.success) promptError(response);
         return response.success;
     }
 
     async function addPermissionToRole(id) {
-        let response = await request("Core", "Permission", "ActionAssign", false, "POST", {
+        let response = await APIManager.request("Core", "Permission", "ActionAssign", false, "POST", {
             "role_id" : parseInt(current_modal_id),
             "action_id" : id
         });
@@ -461,7 +467,7 @@
 
 
     async function editRole(field, value) {
-        let response = await request("Core", "Permission", "Role", current_modal_id, "PATCH", 
+        let response = await APIManager.request("Core", "Permission", "Role", current_modal_id, "PATCH", 
             { [field] : value }
         );
 
@@ -469,7 +475,7 @@
         return response.success;
     }
     async function addUserFromRole(id) {
-        let response = await request("Core", "Permission", "RoleAssign", false, "POST", {
+        let response = await APIManager.request("Core", "Permission", "RoleAssign", false, "POST", {
             "role_id" : parseInt(current_modal_id),
             "user_id" : parseInt(id)
         });
@@ -478,7 +484,7 @@
     }
 
     async function removeUserFromRole(id, lineElement) {
-        let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
+        let response = await APIManager.request("Core", "Permission", "RoleAssign", false, "DELETE", {
             "role_id" : parseInt(current_modal_id),
             "user_id" : parseInt(id)
         });
@@ -489,7 +495,7 @@
     /** PERMISSION DETAILS **/
     async function permissionDetails(id) {
         if(!id) return;
-        let response = await request("Core", "Route", "Action", id, "GET");
+        let response = await APIManager.request("Core", "Route", "Action", id, "GET");
         
         if(response.success) {
             let action = response.data.action;
@@ -561,7 +567,7 @@
                         </select>
                     </th>
                     <th>
-                        <input type="text" id="test-form-token" name="test-form-token" placeholder="Token" value="${token()}">
+                        <input type="text" id="test-form-token" name="test-form-token" placeholder="Token" value="${APIManager.token()}">
                     <th>
                         <input type="text" id="test-form-id" name="test-form-id" placeholder="ID (empty for no element)">
                     </th>
@@ -571,7 +577,7 @@
                 </tr>
             </table>
             <!-- Path of the URL not editable-->
-            <input type="text" style="width:70%" id="test-form-path" name="test-form-path" placeholder="Path" value="${apiPath()}/${token()}/${response.data.action.module_id}/${response.data.action.library_id}/${response.data.action.action_id}" readonly>
+            <input type="text" style="width:70%" id="test-form-path" name="test-form-path" placeholder="Path" value="${APIManager.apiPath()}/${APIManager.token()}/${response.data.action.module_id}/${response.data.action.library_id}/${response.data.action.action_id}" readonly>
             <!-- Text area for JSON -->
             <textarea id="test-form-json" style="width:100%" name="test-form-json" placeholder="JSON data"></textarea>
             <!-- Text area for response -->
@@ -587,7 +593,7 @@
                 //if(id === "")
                 
                 let token = test_form.querySelector("#test-form-token").value;
-                test_form.querySelector("#test-form-path").value = `${apiPath()}/${token}/${response.data.action.module_id}/${response.data.action.library_id}/${response.data.action.action_id}${!id || id === "" ? "" : "/" + id}`;
+                test_form.querySelector("#test-form-path").value = `${APIManager.apiPath()}/${token}/${response.data.action.module_id}/${response.data.action.library_id}/${response.data.action.action_id}${!id || id === "" ? "" : "/" + id}`;
             }
             updateAPIPath();
 
@@ -626,7 +632,7 @@
 
                 } else if (["PATCH"].includes(method)) {
                     test_form.querySelector("#test-form-json").style.display = "block";
-                    console.log(response.data.patchable_fields);
+                    // console.log(response.data.patchable_fields);
                     let data_store = {};
                     response.data.patchable_fields.forEach(parameter => {
                         // data_store[parameter.name] = parameter.value =! null ? parameter.value : "DEFAULT"; 
@@ -705,7 +711,7 @@
     }
 
     async function removeRoleFromPermission(id, lineElement) {
-        let response = await request("Core", "Permission", "ActionAssign", false, "DELETE", {
+        let response = await APIManager.request("Core", "Permission", "ActionAssign", false, "DELETE", {
             "role_id" : parseInt(id),
             "action_id" : current_modal_id
         });
@@ -714,7 +720,7 @@
     }
 
     async function addRoleToPermission(id) {
-        let response = await request("Core", "Permission", "ActionAssign", false, "POST", {
+        let response = await APIManager.request("Core", "Permission", "ActionAssign", false, "POST", {
             "role_id" : parseInt(id),
             "action_id" : current_modal_id
         });
@@ -724,7 +730,7 @@
 
     /** USER DETAILS PART **/
     async function userDetails(id) {
-        let response = await request("Core", "Permission", "User", id, "GET");
+        let response = await APIManager.request("Core", "Permission", "User", id, "GET");
         if(response.success) {
 
             let user = response.data.user;
@@ -778,7 +784,7 @@
     }
 
     async function editUser(field, value) {
-        let response = await request("Core", "Permission", "User", current_modal_id, "PATCH", 
+        let response = await APIManager.request("Core", "Permission", "User", current_modal_id, "PATCH", 
             { [field] : value } 
         );
         if(!response.success) promptError(response);
@@ -786,7 +792,7 @@
     }
 
     async function removeRole(id, lineElement) {
-        let response = await request("Core", "Permission", "RoleAssign", false, "DELETE", {
+        let response = await APIManager.request("Core", "Permission", "RoleAssign", false, "DELETE", {
             "role_id" : parseInt(id),
             "user_id" : parseInt(current_modal_id)
         });
@@ -795,7 +801,7 @@
     }
 
     async function addRole(id) {
-        let response = await request("Core", "Permission", "RoleAssign", false, "POST", {
+        let response = await APIManager.request("Core", "Permission", "RoleAssign", false, "POST", {
             "role_id" : parseInt(id),
             "user_id" : parseInt(current_modal_id)
         });
@@ -853,8 +859,8 @@
 
     async function checkDBSetup() {
         let response = false;
-        response = await request("Core", "Setup", "isSetup", id = false, method = "GET");
-        if(getError(response, "db_not_setup")) {
+        response = await APIManager.request("Core", "Setup", "isSetup", id = false, method = "GET");
+        if(APIManager.getError(response, "db_not_setup")) {
             document.getElementById("config-db").classList.remove("hide");
         } else {
             document.getElementById("categories").classList.remove("hide");
@@ -903,7 +909,7 @@
         let admin_firstname = document.getElementById("admin_firstname").value;
         let admin_lastname = document.getElementById("admin_lastname").value;
 
-        let response = await request("Core", "Setup", "SetupDB", false, "POST",
+        let response = await APIManager.request("Core", "Setup", "SetupDB", false, "POST",
             {
                 "admin_mail" : admin_mail,
                 "admin_password" : admin_password,
@@ -912,7 +918,7 @@
             }
         );
 
-        response = await request("Core", "Setup", "UpdateModule", "Core", "PATCH");
+        response = await APIManager.request("Core", "Setup", "UpdateModule", "Core", "PATCH");
 
     }
 
@@ -1021,8 +1027,8 @@
                     // get the authorized_method field of the object data (not from renamed_data)
                     let authorized_methods = data[i].authorized_methods;
                     let methods = renamed_data[i][column];
-                    console.log(authorized_methods);
-                    console.log(methods);
+                    // console.log(authorized_methods);
+                    // console.log(methods);
                     // TODO HERE
                     let content = document.createElement("div");
                     
@@ -1037,9 +1043,21 @@
                                 method_div.classList.add("authorized");
                                 // On click, call Core, Permission, Authorize, DELETE with parameters role_id, action_id and method
                                 method_div.addEventListener("click", async function() {
-                                    let response = await request("Core", "Permission", "Authorize", false, "DELETE", {
-                                        "role_id" : parseInt(current_modal_id),
-                                        "action_id" : data[i].action_id,
+
+                                    // is current_modal_id parsable to int ?
+                                    let role_id = null;
+                                    let action_id = null;
+                                    if(!isNaN(parseInt(current_modal_id))) {
+                                        role_id = parseInt(current_modal_id);
+                                        action_id = data[i].action_id;
+                                    } else {
+                                        role_id = parseInt(data[i].id);
+                                        action_id = current_modal_id;
+                                    }
+
+                                    let response = await APIManager.request("Core", "Permission", "Authorize", false, "DELETE", {
+                                        "role_id" : role_id,
+                                        "action_id" : action_id,
                                         "method" : method
                                     });
                                     if(response.success) {
@@ -1055,9 +1073,21 @@
                                 method_div.classList.add("unauthorized");
                                 // On click, call Core, Permission, Authorize, POST with parameters role_id, action_id and method
                                 method_div.addEventListener("click", async function() {
-                                    let response = await request("Core", "Permission", "Authorize", false, "POST", {
-                                        "role_id" : parseInt(current_modal_id),
-                                        "action_id" : data[i].action_id,
+
+                                    // is current_modal_id parsable to int ?
+                                    let role_id = null;
+                                    let action_id = null;
+                                    if(!isNaN(parseInt(current_modal_id))) {
+                                        role_id = parseInt(current_modal_id);
+                                        action_id = data[i].action_id;
+                                    } else {
+                                        role_id = parseInt(data[i].id);
+                                        action_id = current_modal_id;
+                                    }
+
+                                    let response = await APIManager.request("Core", "Permission", "Authorize", false, "POST", {
+                                        "role_id" : role_id,
+                                        "action_id" :   action_id,
                                         "method" : method
                                     });
                                     if(response.success) {
@@ -1108,12 +1138,13 @@
                     let button = document.createElement("button");
                     button.innerText = action;
                     button.addEventListener("click", async function() {
-                        let id_name = delete_actions[action].id_name ? delete_actions[action].id_name : "id";
+                        let id_name = delete_actions.id_name ? delete_actions.id_name : "id";
                         if(await delete_actions[action](renamed_data[i][id_name])) {
                             tr.remove();
                         }
                     });
                     td.appendChild(button);
+                    break
                 }
                 if(delete_actions != false) tr.appendChild(td);
                 tbody.appendChild(tr);

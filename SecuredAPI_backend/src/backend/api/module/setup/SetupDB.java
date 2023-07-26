@@ -42,7 +42,7 @@ public record SetupDB() implements Action {
 	
 
 	@Override
-	public void post(Application app, ResponseData res, Connection db, List<Parameter<?>> params) {
+	public void post(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String token) {
 		
 		//if(RequestData.requireId(response, id)) return;
 		

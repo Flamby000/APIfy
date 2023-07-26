@@ -41,7 +41,7 @@ public record User() implements Action {
 	
 	
 	@Override
-	public void get(Application app, ResponseData res, Connection db, String id){
+	public void get(Application app, ResponseData res, Connection db, String id, String token){
 		if(id == RequestData.INVALID) {
 			res.addArray("users", backend.api.permission.User.users(db, app).stream().map(user -> user.toMap()).collect(Collectors.toList()));
 			res.send(200);
@@ -67,7 +67,7 @@ public record User() implements Action {
 	
 	
 	@Override
-	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id) {
+	public void patch(Application app, ResponseData res, Connection db, JSONObject patchFields, String id, String token) {
 		if(RequestData.requireId(res, id)) return;
 		for(var key : patchFields.keySet()) {
 			var value = patchFields.get(key);
@@ -85,7 +85,7 @@ public record User() implements Action {
 	};
 
 	@Override
-	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id){
+	public void delete(Application app, ResponseData res, Connection db, List<Parameter<?>> params, String id, String token){
 		if(backend.api.permission.User.delete(db, app, id)) {
 			res.addString("message", "User deleted");
 			res.send(200);

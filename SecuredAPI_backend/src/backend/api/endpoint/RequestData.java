@@ -118,7 +118,6 @@ public class RequestData {
 	@SuppressWarnings("unchecked")
 	public List<Parameter<?>> getParameters(ResponseData response, String method, Action action, List<Parameter<?>> expectedParameters) throws IOException {
 		var result = new ArrayList<Parameter<?>>();
-
 		var json = params();
 		if((json == null || json.isEmpty()) && expectedParameters.size() == 0) return expectedParameters;
 		
@@ -202,20 +201,26 @@ public class RequestData {
 				}
 				
 				// Check the type of the argument
-				
-				var requestType = object.get(parameter.name()).getClass();
+				try {
+					var requestType = object.get(parameter.name()).getClass();
 
-				if(requestType.equals(org.json.JSONArray.class)) requestType = List.class;
-				if(requestType.equals(org.json.JSONObject.class)) requestType = Map.class;
 				
-				if(object.has(parameter.name()) && (!parameter.type().equals(requestType))) {
-				
-					response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +requestType.getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
+					if(requestType.equals(org.json.JSONArray.class)) requestType = List.class;
+					if(requestType.equals(org.json.JSONObject.class)) requestType = Map.class;
+					
+					if(object.has(parameter.name()) && (!parameter.type().equals(requestType))) {
+					
+						response.appendError("bad_parameter_type", "The parameter \"" + parameter.name() + "\" is " +requestType.getCanonicalName()+ " and must be of type " + parameter.type().getCanonicalName());
+						response.send(412);
+						return null;
+					}
+				} catch (Exception e) {
+					response.appendError("parameter_missing", "The parameter " + parameter.name() + " is missing");
 					response.send(412);
 					return null;
-				}
-	
-			}	
+					
+				}	
+			}
 		}
 		
 
