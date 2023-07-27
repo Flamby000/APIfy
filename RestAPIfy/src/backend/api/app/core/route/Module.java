@@ -18,6 +18,8 @@ public record Module() implements Action {
 	@Override
 	public String description() {return "Check if the database is setup";}
 
+	@Override
+	public boolean isGuestAction() { return true;}
 	
 	@Override
 	public Map<String, String> methodsDoc() {

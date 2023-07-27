@@ -912,14 +912,20 @@
         let response = await APIManager.request("Core", "Setup", "SetupDB", false, "POST",
             {
                 "admin_mail" : admin_mail,
-                "admin_password" : admin_password,
+                "admin_password" : await APIManager.hashStringToSHA256(admin_password),
                 "admin_firstname" : admin_firstname,
                 "admin_lastname" : admin_lastname
             }
         );
 
-        response = await APIManager.request("Core", "Setup", "UpdateModule", "Core", "PATCH");
+        response = await APIManager.request("Core", "Route", "Module", "Core", "PATCH");
 
+
+        if(response.success) {
+            APIManager.login(admin_mail, admin_password);
+            // refresh page
+            window.location.reload();
+        }
     }
 
 

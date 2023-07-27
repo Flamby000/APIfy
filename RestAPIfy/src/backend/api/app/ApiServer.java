@@ -3,6 +3,7 @@ package backend.api.app;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Objects;
 
 import org.json.JSONObject;
@@ -23,7 +24,7 @@ public class ApiServer {
 	 * The main of the application that start the API server.
 	 * @param args are the arguments of the main.
 	 */
-    public static void main(String[] args){
+    public static void start(List<Module> modules){
     	try {
     		Integer port = null;
     		try (BufferedReader reader = new BufferedReader(new FileReader(Application.CONFIG_FILE))) {
@@ -39,7 +40,11 @@ public class ApiServer {
 	    	/* Start the HTTP server */
 	        var server = HttpServer.create(new InetSocketAddress(port), 0);
 	        
-	        server.createContext("/api", new RequestHandler(new Application()));
+	        var app = new Application();
+	        modules.forEach((module) -> app.addModule(module));
+	        
+	        
+	        server.createContext("/api", new RequestHandler(app));
 	        //server.createContext("/setup", new RequestHandler());
 	        server.setExecutor(null);
 	        server.start();

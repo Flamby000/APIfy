@@ -121,7 +121,7 @@ public record SetupDB() implements Action {
 				   +"values (?, ?, ?, ?, ?);", app.prefix())
 				  );
 				statement.setString(1, (String) Parameter.find(params, "admin_mail").value());
-				statement.setString(2, (String) Parameter.find(params, "admin_password").value());
+				statement.setString(2, app.encrypt((String) Parameter.find(params, "admin_password").value()));
 				statement.setString(3, (String) Parameter.find(params, "admin_firstname").value());
 				statement.setString(4, (String) Parameter.find(params, "admin_lastname").value());
 				statement.setString(5, (String) Parameter.find(params, "admin_username").value());
