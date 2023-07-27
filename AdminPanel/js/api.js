@@ -97,7 +97,6 @@ class APIManager {
         return false;
     }
 
-
     static logout() {
         APIManager.setToken(1);
         return {
@@ -169,6 +168,5 @@ class APIManager {
         const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
       
         return hashHex;
-      }
-
+    }
 }
